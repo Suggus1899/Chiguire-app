@@ -17,6 +17,23 @@ import 'features/fiscal/fiscal_page.dart';
 import 'features/payments/payments_page.dart';
 import 'features/delivery/delivery_routes_page.dart';
 import 'features/settings/settings_page.dart';
+import 'features/sellers/seller_list_page.dart';
+import 'features/sellers/seller_form_page.dart';
+import 'features/sellers/commissions_page.dart';
+import 'features/payment_methods/payment_methods_page.dart';
+import 'features/fiscal_devices/fiscal_devices_page.dart';
+import 'features/credit_notes/credit_note_list_page.dart';
+import 'features/credit_notes/credit_note_form_page.dart';
+import 'features/transfers/transfer_list_page.dart';
+import 'features/transfers/transfer_form_page.dart';
+import 'features/manufacturing/manufacturing_list_page.dart';
+import 'features/manufacturing/manufacturing_form_page.dart';
+import 'features/picking/picking_list_page.dart';
+import 'features/picking/picking_detail_page.dart';
+import 'features/accounts/accounts_page.dart';
+import 'features/reports/reports_page.dart';
+import 'features/api_tokens/api_tokens_page.dart';
+import 'features/scanner/scanner_page.dart';
 
 final router = GoRouter(
   initialLocation: '/login',
@@ -39,5 +56,22 @@ final router = GoRouter(
     GoRoute(path: '/payments', builder: (context, state) => const PaymentsPage()),
     GoRoute(path: '/routes', builder: (context, state) => const DeliveryRoutesPage()),
     GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
+    GoRoute(path: '/sellers', builder: (context, state) => const SellerListPage()),
+    GoRoute(path: '/sellers/new', builder: (context, state) => SellerFormPage(id: state.uri.queryParameters['id'])),
+    GoRoute(path: '/sellers/commissions', builder: (context, state) => const CommissionsPage()),
+    GoRoute(path: '/payment-methods', builder: (context, state) => const PaymentMethodsPage()),
+    GoRoute(path: '/fiscal-devices', builder: (context, state) => const FiscalDevicesPage()),
+    GoRoute(path: '/credit-notes', builder: (context, state) => const CreditNoteListPage()),
+    GoRoute(path: '/credit-notes/new', builder: (context, state) => const CreditNoteFormPage()),
+    GoRoute(path: '/transfers', builder: (context, state) => const TransferListPage()),
+    GoRoute(path: '/transfers/new', builder: (context, state) => const TransferFormPage()),
+    GoRoute(path: '/manufacturing', builder: (context, state) => const ManufacturingListPage()),
+    GoRoute(path: '/manufacturing/new', builder: (context, state) => const ManufacturingFormPage()),
+    GoRoute(path: '/picking', builder: (context, state) => const PickingListPage()),
+    GoRoute(path: '/picking/:id', builder: (context, state) => PickingDetailPage(id: state.pathParameters['id']!)),
+    GoRoute(path: '/accounts', builder: (context, state) => const AccountsPage()),
+    GoRoute(path: '/reports', builder: (context, state) => const ReportsPage()),
+    GoRoute(path: '/api-tokens', builder: (context, state) => const ApiTokensPage()),
+    GoRoute(path: '/scanner', builder: (context, state) => const ScannerPage()),
   ],
 );

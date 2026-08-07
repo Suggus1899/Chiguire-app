@@ -14,6 +14,17 @@ const navItems = [
   { href: '/fiscal', label: 'Fiscal' },
   { href: '/pagos', label: 'Pagos' },
   { href: '/rutas', label: 'Rutas' },
+  { href: '/vendedores', label: 'Vendedores' },
+  { href: '/metodos-pago', label: 'Métodos de Pago' },
+  { href: '/dispositivos-fiscales', label: 'Dispositivos Fiscales' },
+  { href: '/cuentas', label: 'Cuentas por Cobrar/Pagar' },
+  { href: '/informes', label: 'Informes' },
+  { href: '/notas-credito', label: 'Notas de Crédito' },
+  { href: '/transferencias', label: 'Transferencias' },
+  { href: '/manufactura', label: 'Manufactura' },
+  { href: '/picking', label: 'Picking' },
+  { href: '/api-tokens', label: 'API Tokens' },
+  { href: '/onboarding', label: 'Onboarding' },
   { href: '/configuracion', label: 'Configuración' },
 ];
 

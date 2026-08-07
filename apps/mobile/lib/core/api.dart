@@ -327,6 +327,288 @@ class SaasApi {
   }
 }
 
+class SellersApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/sellers');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/sellers', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> get(String id) async {
+    final res = await _dio.get('/sellers/$id');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> update(String id, Map<String, dynamic> data) async {
+    final res = await _dio.put('/sellers/$id', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<void> delete(String id) async {
+    await _dio.delete('/sellers/$id');
+  }
+
+  Future<List<Map<String, dynamic>>> listCommissions({Map<String, dynamic>? query}) async {
+    final res = await _dio.get('/sellers/commissions', queryParameters: query);
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> markCommissionsPaid(Map<String, dynamic> data) async {
+    final res = await _dio.post('/sellers/commissions/pay', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+}
+
+class PaymentMethodsApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/payment-methods');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/payment-methods', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> update(String id, Map<String, dynamic> data) async {
+    final res = await _dio.put('/payment-methods/$id', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<void> delete(String id) async {
+    await _dio.delete('/payment-methods/$id');
+  }
+}
+
+class FiscalDevicesApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/fiscal-devices');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/fiscal-devices', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> update(String id, Map<String, dynamic> data) async {
+    final res = await _dio.put('/fiscal-devices/$id', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<void> delete(String id) async {
+    await _dio.delete('/fiscal-devices/$id');
+  }
+
+  Future<List<Map<String, dynamic>>> listSequences(String deviceId) async {
+    final res = await _dio.get('/fiscal-devices/$deviceId/sequences');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> createSequence(String deviceId, Map<String, dynamic> data) async {
+    final res = await _dio.post('/fiscal-devices/$deviceId/sequences', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<List<Map<String, dynamic>>> listContingency(String deviceId) async {
+    final res = await _dio.get('/fiscal-devices/$deviceId/contingency');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> createContingency(String deviceId, Map<String, dynamic> data) async {
+    final res = await _dio.post('/fiscal-devices/$deviceId/contingency', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+}
+
+class CreditNotesApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/credit-notes');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/credit-notes', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> get(String id) async {
+    final res = await _dio.get('/credit-notes/$id');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<void> voidNote(String id) async {
+    await _dio.post('/credit-notes/$id/void');
+  }
+}
+
+class TransfersApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/transfers');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/transfers', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> get(String id) async {
+    final res = await _dio.get('/transfers/$id');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> ship(String id) async {
+    final res = await _dio.post('/transfers/$id/ship');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> receive(String id) async {
+    final res = await _dio.post('/transfers/$id/receive');
+    return Map<String, dynamic>.from(res.data);
+  }
+}
+
+class ManufacturingApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/manufacturing');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/manufacturing', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> get(String id) async {
+    final res = await _dio.get('/manufacturing/$id');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> start(String id) async {
+    final res = await _dio.post('/manufacturing/$id/start');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> complete(String id) async {
+    final res = await _dio.post('/manufacturing/$id/complete');
+    return Map<String, dynamic>.from(res.data);
+  }
+}
+
+class PickingApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/picking');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/picking', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> get(String id) async {
+    final res = await _dio.get('/picking/$id');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> verifyItem(String id, String itemId, double qtyPicked) async {
+    final res = await _dio.post('/picking/$id/items/$itemId/verify', data: {
+      'qty_picked': qtyPicked,
+    });
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> complete(String id) async {
+    final res = await _dio.post('/picking/$id/complete');
+    return Map<String, dynamic>.from(res.data);
+  }
+}
+
+class AccountsPayableApi {
+  Future<List<Map<String, dynamic>>> listReceivable() async {
+    final res = await _dio.get('/accounts/receivable');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<List<Map<String, dynamic>>> listPayable() async {
+    final res = await _dio.get('/accounts/payable');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> createPayment(Map<String, dynamic> data) async {
+    final res = await _dio.post('/accounts/payments', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<List<Map<String, dynamic>>> listPayments() async {
+    final res = await _dio.get('/accounts/payments');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> sendReminder(String id, String channel) async {
+    final res = await _dio.post('/accounts/$id/remind', data: {'channel': channel});
+    return Map<String, dynamic>.from(res.data);
+  }
+}
+
+class ReportsApi {
+  Future<Map<String, dynamic>> salesBook(Map<String, dynamic> params) async {
+    final res = await _dio.get('/reports/sales-book', queryParameters: params);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> purchasesBook(Map<String, dynamic> params) async {
+    final res = await _dio.get('/reports/purchases-book', queryParameters: params);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> inventoryCurrent(Map<String, dynamic> params) async {
+    final res = await _dio.get('/reports/inventory-current', queryParameters: params);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> inventoryValued(Map<String, dynamic> params) async {
+    final res = await _dio.get('/reports/inventory-valued', queryParameters: params);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> kardex(Map<String, dynamic> params) async {
+    final res = await _dio.get('/reports/kardex', queryParameters: params);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> art177(Map<String, dynamic> params) async {
+    final res = await _dio.get('/reports/art177', queryParameters: params);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> igtfReport(Map<String, dynamic> params) async {
+    final res = await _dio.get('/reports/igtf', queryParameters: params);
+    return Map<String, dynamic>.from(res.data);
+  }
+}
+
+class ApiTokensApi {
+  Future<List<Map<String, dynamic>>> list() async {
+    final res = await _dio.get('/api-tokens');
+    return List<Map<String, dynamic>>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> create(Map<String, dynamic> data) async {
+    final res = await _dio.post('/api-tokens', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<void> revoke(String id) async {
+    await _dio.delete('/api-tokens/$id');
+  }
+}
+
 final authApi = AuthApi();
 final tenantsApi = TenantsApi();
 final powerSyncApi = PowerSyncApi();
@@ -342,3 +624,13 @@ final quotationsApi = QuotationsApi();
 final commissionsApi = CommissionsApi();
 final deliveryApi = DeliveryApi();
 final saasApi = SaasApi();
+final sellersApi = SellersApi();
+final paymentMethodsApi = PaymentMethodsApi();
+final fiscalDevicesApi = FiscalDevicesApi();
+final creditNotesApi = CreditNotesApi();
+final transfersApi = TransfersApi();
+final manufacturingApi = ManufacturingApi();
+final pickingApi = PickingApi();
+final accountsPayableApi = AccountsPayableApi();
+final reportsApi = ReportsApi();
+final apiTokensApi = ApiTokensApi();

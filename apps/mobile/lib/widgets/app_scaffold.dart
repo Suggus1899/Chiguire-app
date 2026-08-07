@@ -25,6 +25,15 @@ class AppScaffold extends StatelessWidget {
     (icon: Icons.more_horiz, selectedIcon: Icons.more_horiz, label: 'Más'),
   ];
 
+  static const _moreMenuItems = [
+    (icon: Icons.badge_outlined, label: 'Vendedores', route: '/sellers'),
+    (icon: Icons.payments_outlined, label: 'Métodos de Pago', route: '/payment-methods'),
+    (icon: Icons.print_outlined, label: 'Dispositivos Fiscales', route: '/fiscal-devices'),
+    (icon: Icons.account_balance_outlined, label: 'Cuentas', route: '/accounts'),
+    (icon: Icons.assessment_outlined, label: 'Informes', route: '/reports'),
+    (icon: Icons.key_outlined, label: 'API Tokens', route: '/api-tokens'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,7 +56,38 @@ class AppScaffold extends StatelessWidget {
   }
 
   void _navigate(BuildContext context, int index) {
+    if (index == 4) {
+      _showMoreMenu(context);
+      return;
+    }
     final routes = ['/', '/customers', '/products', '/invoices', '/settings'];
     context.go(routes[index]);
+  }
+
+  void _showMoreMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Más', style: Theme.of(ctx).textTheme.titleMedium),
+            ),
+            for (final item in _moreMenuItems)
+              ListTile(
+                leading: Icon(item.icon),
+                title: Text(item.label),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.go(item.route);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 }

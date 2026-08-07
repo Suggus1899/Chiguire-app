@@ -358,6 +358,185 @@ export const api = {
       return request<WebhookDelivery[]>('/webhooks/deliveries');
     },
   },
+  sellers: {
+    list() {
+      return request<Seller[]>('/sellers');
+    },
+    create(data: Partial<Seller>) {
+      return request<Seller>('/sellers', { method: 'POST', body: JSON.stringify(data) });
+    },
+    get(id: string) {
+      return request<Seller>(`/sellers/${id}`);
+    },
+    update(id: string, data: Partial<Seller>) {
+      return request<Seller>(`/sellers/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    delete(id: string) {
+      return request<void>(`/sellers/${id}`, { method: 'DELETE' });
+    },
+    listCommissions(sellerId: string) {
+      return request<SellerCommission[]>(`/sellers/${sellerId}/commissions`);
+    },
+    markCommissionsPaid(sellerId: string, data: { commission_ids: string[]; reference: string; notes?: string }) {
+      return request<void>(`/sellers/${sellerId}/commissions/pay`, { method: 'POST', body: JSON.stringify(data) });
+    },
+  },
+  paymentMethods: {
+    list() {
+      return request<PaymentMethod[]>('/payment-methods');
+    },
+    create(data: Partial<PaymentMethod>) {
+      return request<PaymentMethod>('/payment-methods', { method: 'POST', body: JSON.stringify(data) });
+    },
+    update(id: string, data: Partial<PaymentMethod>) {
+      return request<PaymentMethod>(`/payment-methods/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    delete(id: string) {
+      return request<void>(`/payment-methods/${id}`, { method: 'DELETE' });
+    },
+  },
+  fiscalDevices: {
+    list() {
+      return request<FiscalDevice[]>('/fiscal-devices');
+    },
+    create(data: Partial<FiscalDevice>) {
+      return request<FiscalDevice>('/fiscal-devices', { method: 'POST', body: JSON.stringify(data) });
+    },
+    update(id: string, data: Partial<FiscalDevice>) {
+      return request<FiscalDevice>(`/fiscal-devices/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    },
+    delete(id: string) {
+      return request<void>(`/fiscal-devices/${id}`, { method: 'DELETE' });
+    },
+    listSequences(deviceId: string) {
+      return request<DocumentSequence[]>(`/fiscal-devices/${deviceId}/sequences`);
+    },
+    createSequence(deviceId: string, data: Partial<DocumentSequence>) {
+      return request<DocumentSequence>(`/fiscal-devices/${deviceId}/sequences`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    listContingency(deviceId: string) {
+      return request<ContingencyBook[]>(`/fiscal-devices/${deviceId}/contingency`);
+    },
+    createContingency(deviceId: string, data: Partial<ContingencyBook>) {
+      return request<ContingencyBook>(`/fiscal-devices/${deviceId}/contingency`, { method: 'POST', body: JSON.stringify(data) });
+    },
+  },
+  creditNotes: {
+    list() {
+      return request<CreditNote[]>('/credit-notes');
+    },
+    create(data: Partial<CreditNote>) {
+      return request<CreditNote>('/credit-notes', { method: 'POST', body: JSON.stringify(data) });
+    },
+    get(id: string) {
+      return request<CreditNote>(`/credit-notes/${id}`);
+    },
+    void(id: string) {
+      return request<void>(`/credit-notes/${id}/void`, { method: 'POST' });
+    },
+  },
+  transfers: {
+    list() {
+      return request<Transfer[]>('/transfers');
+    },
+    create(data: Partial<Transfer>) {
+      return request<Transfer>('/transfers', { method: 'POST', body: JSON.stringify(data) });
+    },
+    get(id: string) {
+      return request<Transfer>(`/transfers/${id}`);
+    },
+    ship(id: string) {
+      return request<Transfer>(`/transfers/${id}/ship`, { method: 'POST' });
+    },
+    receive(id: string) {
+      return request<Transfer>(`/transfers/${id}/receive`, { method: 'POST' });
+    },
+  },
+  manufacturing: {
+    list() {
+      return request<ManufacturingOrder[]>('/manufacturing-orders');
+    },
+    create(data: Partial<ManufacturingOrder>) {
+      return request<ManufacturingOrder>('/manufacturing-orders', { method: 'POST', body: JSON.stringify(data) });
+    },
+    get(id: string) {
+      return request<ManufacturingOrder>(`/manufacturing-orders/${id}`);
+    },
+    start(id: string) {
+      return request<ManufacturingOrder>(`/manufacturing-orders/${id}/start`, { method: 'POST' });
+    },
+    complete(id: string) {
+      return request<ManufacturingOrder>(`/manufacturing-orders/${id}/complete`, { method: 'POST' });
+    },
+  },
+  picking: {
+    list() {
+      return request<PickingList[]>('/picking-lists');
+    },
+    create(data: Partial<PickingList>) {
+      return request<PickingList>('/picking-lists', { method: 'POST', body: JSON.stringify(data) });
+    },
+    get(id: string) {
+      return request<PickingList>(`/picking-lists/${id}`);
+    },
+    verifyItem(id: string, itemId: string, data: { qty_picked: number }) {
+      return request<PickingItem>(`/picking-lists/${id}/items/${itemId}/verify`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    complete(id: string) {
+      return request<PickingList>(`/picking-lists/${id}/complete`, { method: 'POST' });
+    },
+  },
+  accountsPayable: {
+    listReceivable() {
+      return request<AccountItem[]>('/accounts/receivable');
+    },
+    listPayable() {
+      return request<AccountItem[]>('/accounts/payable');
+    },
+    createPayment(data: Partial<AccountPayment>) {
+      return request<AccountPayment>('/accounts/payments', { method: 'POST', body: JSON.stringify(data) });
+    },
+    listPayments() {
+      return request<AccountPayment[]>('/accounts/payments');
+    },
+    sendReminder(id: string, data: { channel: 'sms' | 'email' }) {
+      return request<void>(`/accounts/${id}/reminder`, { method: 'POST', body: JSON.stringify(data) });
+    },
+  },
+  reports: {
+    salesBook(from: string, to: string) {
+      return request<Record<string, unknown>[]>(`/reports/sales-book?from=${from}&to=${to}`);
+    },
+    purchasesBook(from: string, to: string) {
+      return request<Record<string, unknown>[]>(`/reports/purchases-book?from=${from}&to=${to}`);
+    },
+    inventoryCurrent() {
+      return request<Record<string, unknown>[]>('/reports/inventory-current');
+    },
+    inventoryValued() {
+      return request<Record<string, unknown>[]>('/reports/inventory-valued');
+    },
+    kardex(productId: string, from: string, to: string) {
+      return request<Record<string, unknown>[]>(`/reports/kardex?product_id=${productId}&from=${from}&to=${to}`);
+    },
+    art177(from: string, to: string) {
+      return request<Record<string, unknown>[]>(`/reports/art-177?from=${from}&to=${to}`);
+    },
+    igtfReport(from: string, to: string) {
+      return request<Record<string, unknown>[]>(`/reports/igtf?from=${from}&to=${to}`);
+    },
+  },
+  apiTokens: {
+    list() {
+      return request<ApiToken[]>('/api-tokens');
+    },
+    create(data: { name: string; expires_at?: string }) {
+      return request<{ id: string; token: string; name: string; expires_at: string }>('/api-tokens', { method: 'POST', body: JSON.stringify(data) });
+    },
+    revoke(id: string) {
+      return request<void>(`/api-tokens/${id}`, { method: 'DELETE' });
+    },
+  },
   importExport: {
     async importCustomers(file: File) {
       const form = new FormData();
@@ -492,4 +671,65 @@ export type WebhookDelivery = {
 export type Subscription = {
   id: string; tenant_id: string; plan: string; status: string; seats: number;
   current_period_end: string; created_at: string;
+};
+export type Seller = {
+  id: string; tenant_id: string; name: string; email: string; phone: string;
+  commission_pct: number; is_active: boolean; created_at: string;
+};
+export type SellerCommission = {
+  id: string; seller_id: string; invoice_id: string; doc_type: string;
+  base_amount: number; commission_amount: number; rate: number;
+  payment_status: string; cxc_customer: string; created_at: string;
+};
+export type PaymentMethod = {
+  id: string; tenant_id: string; name: string; type: string; currency: string;
+  allow_invoices: boolean; allow_change: boolean; allow_refunds: boolean;
+  is_active: boolean; created_at: string;
+};
+export type FiscalDevice = {
+  id: string; tenant_id: string; name: string; type: string; model: string;
+  serial: string; branch_id: string; status: string; created_at: string;
+};
+export type DocumentSequence = {
+  id: string; device_id: string; doc_type: string; prefix: string;
+  suffix: string; last_seq: number; created_at: string;
+};
+export type ContingencyBook = {
+  id: string; device_id: string; doc_type: string; prefix: string;
+  start_seq: number; end_seq: number; current_seq: number; created_at: string;
+};
+export type CreditNote = {
+  id: string; tenant_id: string; number: string; type: string;
+  invoice_id: string; reason: string; total: number; status: string;
+  created_at: string;
+};
+export type Transfer = {
+  id: string; tenant_id: string; from_warehouse_id: string; to_warehouse_id: string;
+  status: string; created_at: string;
+};
+export type ManufacturingOrder = {
+  id: string; tenant_id: string; product_id: string; warehouse_id: string;
+  quantity: number; status: string; started_at: string | null;
+  completed_at: string | null; created_at: string;
+};
+export type PickingList = {
+  id: string; tenant_id: string; warehouse_id: string; route_id: string | null;
+  status: string; created_at: string;
+};
+export type PickingItem = {
+  id: string; picking_list_id: string; product_id: string; qty_required: number;
+  qty_picked: number; verified: boolean;
+};
+export type AccountItem = {
+  id: string; tenant_id: string; party_name: string; amount: number;
+  balance: number; status: string; due_date: string; type: string; created_at: string;
+};
+export type AccountPayment = {
+  id: string; tenant_id: string; account_id: string; amount: number;
+  payment_method: string; reference: string; notes: string; created_at: string;
+};
+export type ApiToken = {
+  id: string; tenant_id: string; name: string; token_preview: string;
+  last_used_at: string | null; expires_at: string; is_active: boolean;
+  created_at: string;
 };

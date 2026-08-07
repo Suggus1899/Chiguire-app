@@ -12,22 +12,32 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/Suggus1899/chiguire/api/internal/accountspayable"
+	"github.com/Suggus1899/chiguire/api/internal/apitoken"
 	"github.com/Suggus1899/chiguire/api/internal/auth"
 	"github.com/Suggus1899/chiguire/api/internal/commission"
+	"github.com/Suggus1899/chiguire/api/internal/creditnote"
 	"github.com/Suggus1899/chiguire/api/internal/customer"
 	"github.com/Suggus1899/chiguire/api/internal/delivery"
 	"github.com/Suggus1899/chiguire/api/internal/fiscal"
+	"github.com/Suggus1899/chiguire/api/internal/fiscaldevice"
 	"github.com/Suggus1899/chiguire/api/internal/importexport"
 	chimiddleware "github.com/Suggus1899/chiguire/api/internal/middleware"
 	"github.com/Suggus1899/chiguire/api/internal/inventory"
 	"github.com/Suggus1899/chiguire/api/internal/invoice"
+	"github.com/Suggus1899/chiguire/api/internal/manufacturing"
 	"github.com/Suggus1899/chiguire/api/internal/payment"
+	"github.com/Suggus1899/chiguire/api/internal/paymentmethod"
+	"github.com/Suggus1899/chiguire/api/internal/picking"
 	"github.com/Suggus1899/chiguire/api/internal/powersync"
 	"github.com/Suggus1899/chiguire/api/internal/product"
 	"github.com/Suggus1899/chiguire/api/internal/purchase"
 	"github.com/Suggus1899/chiguire/api/internal/quotation"
+	"github.com/Suggus1899/chiguire/api/internal/report"
 	"github.com/Suggus1899/chiguire/api/internal/saas"
+	"github.com/Suggus1899/chiguire/api/internal/seller"
 	"github.com/Suggus1899/chiguire/api/internal/tenant"
+	"github.com/Suggus1899/chiguire/api/internal/transfer"
 	"github.com/Suggus1899/chiguire/api/internal/vendor"
 	"github.com/Suggus1899/chiguire/api/internal/webhook"
 )
@@ -244,6 +254,100 @@ func main() {
 			r.Route("/export", func(r chi.Router) {
 				r.Get("/invoices", importexport.HandleExportInvoices(pool))
 				r.Get("/customers", importexport.HandleExportCustomers(pool))
+			})
+
+			// Cachicamo parity: Sellers
+			r.Route("/sellers", func(r chi.Router) {
+				r.Post("/", seller.HandleCreate(pool))
+				r.Get("/", seller.HandleList(pool))
+				r.Get("/{id}", seller.HandleGet(pool))
+				r.Put("/{id}", seller.HandleUpdate(pool))
+				r.Delete("/{id}", seller.HandleDelete(pool))
+				r.Get("/commissions", seller.HandleListCommissions(pool))
+				r.Post("/commissions/pay", seller.HandleMarkCommissionsPaid(pool))
+				r.Get("/commission-limits", seller.HandleListCommissionLimits(pool))
+			})
+
+			// Cachicamo parity: Payment methods
+			r.Route("/payment-methods", func(r chi.Router) {
+				r.Post("/", paymentmethod.HandleCreate(pool))
+				r.Get("/", paymentmethod.HandleList(pool))
+				r.Put("/{id}", paymentmethod.HandleUpdate(pool))
+				r.Delete("/{id}", paymentmethod.HandleDelete(pool))
+			})
+
+			// Cachicamo parity: Fiscal devices + sequences + contingency
+			r.Route("/fiscal-devices", func(r chi.Router) {
+				r.Post("/", fiscaldevice.HandleCreate(pool))
+				r.Get("/", fiscaldevice.HandleList(pool))
+				r.Put("/{id}", fiscaldevice.HandleUpdate(pool))
+				r.Delete("/{id}", fiscaldevice.HandleDelete(pool))
+				r.Get("/sequences", fiscaldevice.HandleListSequences(pool))
+				r.Post("/sequences", fiscaldevice.HandleCreateSequence(pool))
+				r.Get("/contingency", fiscaldevice.HandleListContingency(pool))
+				r.Post("/contingency", fiscaldevice.HandleCreateContingency(pool))
+			})
+
+			// Cachicamo parity: Credit/debit notes
+			r.Route("/credit-notes", func(r chi.Router) {
+				r.Post("/", creditnote.HandleCreate(pool))
+				r.Get("/", creditnote.HandleList(pool))
+				r.Get("/{id}", creditnote.HandleGet(pool))
+				r.Delete("/{id}", creditnote.HandleVoid(pool))
+			})
+
+			// Cachicamo parity: Inventory transfers
+			r.Route("/transfers", func(r chi.Router) {
+				r.Post("/", transfer.HandleCreate(pool))
+				r.Get("/", transfer.HandleList(pool))
+				r.Get("/{id}", transfer.HandleGet(pool))
+				r.Post("/{id}/ship", transfer.HandleShip(pool))
+				r.Post("/{id}/receive", transfer.HandleReceive(pool))
+			})
+
+			// Cachicamo parity: Manufacturing
+			r.Route("/manufacturing", func(r chi.Router) {
+				r.Post("/", manufacturing.HandleCreate(pool))
+				r.Get("/", manufacturing.HandleList(pool))
+				r.Get("/{id}", manufacturing.HandleGet(pool))
+				r.Post("/{id}/start", manufacturing.HandleStart(pool))
+				r.Post("/{id}/complete", manufacturing.HandleComplete(pool))
+			})
+
+			// Cachicamo parity: Picking
+			r.Route("/picking", func(r chi.Router) {
+				r.Post("/", picking.HandleCreate(pool))
+				r.Get("/", picking.HandleList(pool))
+				r.Get("/{id}", picking.HandleGet(pool))
+				r.Post("/items/{itemId}/verify", picking.HandleVerifyItem(pool))
+				r.Post("/{id}/complete", picking.HandleComplete(pool))
+			})
+
+			// Cachicamo parity: Accounts receivable/payable
+			r.Route("/accounts", func(r chi.Router) {
+				r.Get("/receivable", accountspayable.HandleListReceivable(pool))
+				r.Get("/payable", accountspayable.HandleListPayable(pool))
+				r.Post("/payments", accountspayable.HandleCreatePayment(pool))
+				r.Get("/payments", accountspayable.HandleListPayments(pool))
+				r.Post("/{id}/reminder", accountspayable.HandleSendReminder(pool))
+			})
+
+			// Cachicamo parity: Reports
+			r.Route("/reports", func(r chi.Router) {
+				r.Get("/sales-book", report.HandleSalesBook(pool))
+				r.Get("/purchases-book", report.HandlePurchasesBook(pool))
+				r.Get("/inventory-current", report.HandleInventoryCurrent(pool))
+				r.Get("/inventory-valued", report.HandleInventoryValued(pool))
+				r.Get("/kardex", report.HandleKardex(pool))
+				r.Get("/art177", report.HandleArt177(pool))
+				r.Get("/igtf", report.HandleIGTFReport(pool))
+			})
+
+			// Cachicamo parity: API tokens
+			r.Route("/api-tokens", func(r chi.Router) {
+				r.Post("/", apitoken.HandleCreate(pool))
+				r.Get("/", apitoken.HandleList(pool))
+				r.Delete("/{id}", apitoken.HandleRevoke(pool))
 			})
 		})
 	})
