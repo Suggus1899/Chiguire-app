@@ -1,7 +1,7 @@
 # Chiguire — ERP offline-first multi-tenant
 
 ## Stack
-- **API**: Go 1.25 + chi + pgx/v5 | `apps/api/`
+- **API**: Go 1.26 + chi + pgx/v5 | `apps/api/`
 - **Web**: Next.js 16 (App Router) + TS + Tailwind + PowerSync | `apps/web/`
 - **Mobile**: Flutter + Riverpod + PowerSync | `apps/mobile/`
 - **Desktop**: Tauri 2 (Phase 3) | `apps/desktop/`

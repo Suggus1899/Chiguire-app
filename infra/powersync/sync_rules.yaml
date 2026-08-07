@@ -8,22 +8,114 @@ bucket_definitions:
     # 'token_parameters.tenant_id' comes from the JWT claim we set
     parameters: "SELECT token_parameters.tenant_id as tenant_id"
     data:
+      # Phase 1: Customers, vendors, products, inventory
       - table: customers
         where: "tenant_id = bucket.tenant_id"
       - table: vendors
         where: "tenant_id = bucket.tenant_id"
+      - table: product_categories
+        where: "tenant_id = bucket.tenant_id"
+      - table: units_of_measure
+        where: "tenant_id = bucket.tenant_id"
       - table: products
+        where: "tenant_id = bucket.tenant_id"
+      - table: product_prices
+        where: "tenant_id = bucket.tenant_id"
+      - table: product_attribute_groups
         where: "tenant_id = bucket.tenant_id"
       - table: branches
         where: "tenant_id = bucket.tenant_id"
+      - table: warehouses
+        where: "tenant_id = bucket.tenant_id"
+      - table: stock_movements
+        where: "tenant_id = bucket.tenant_id"
+
+      # Phase 1: Invoices
       - table: invoices
         where: "tenant_id = bucket.tenant_id"
       - table: invoice_items
         where: "tenant_id = bucket.tenant_id"
       - table: invoice_payments
         where: "tenant_id = bucket.tenant_id"
-      - table: stock_movements
+
+      # Phase 2: Fiscal
+      - table: tax_categories
         where: "tenant_id = bucket.tenant_id"
+      - table: tax_withholdings
+        where: "tenant_id = bucket.tenant_id"
+      - table: fiscal_periods
+        where: "tenant_id = bucket.tenant_id"
+      - table: fiscal_books
+        where: "tenant_id = bucket.tenant_id"
+
+      # Phase 4: Payment links
+      - table: payment_links
+        where: "tenant_id = bucket.tenant_id"
+
+      # Phase 5: Purchases, quotations, commissions, delivery
+      - table: purchase_orders
+        where: "tenant_id = bucket.tenant_id"
+      - table: purchase_order_items
+        where: "tenant_id = bucket.tenant_id"
+      - table: quotations
+        where: "tenant_id = bucket.tenant_id"
+      - table: quotation_items
+        where: "tenant_id = bucket.tenant_id"
+      - table: sales_commissions
+        where: "tenant_id = bucket.tenant_id"
+      - table: delivery_routes
+        where: "tenant_id = bucket.tenant_id"
+      - table: delivery_stops
+        where: "tenant_id = bucket.tenant_id"
+
+      # Phase 6: SaaS, webhooks
+      - table: outgoing_webhooks
+        where: "tenant_id = bucket.tenant_id"
+      - table: webhook_deliveries
+        where: "tenant_id = bucket.tenant_id"
+      - table: subscriptions
+        where: "tenant_id = bucket.tenant_id"
+
+      # Cachicamo parity: sellers, payment methods, fiscal devices
+      - table: sellers
+        where: "tenant_id = bucket.tenant_id"
+      - table: payment_methods
+        where: "tenant_id = bucket.tenant_id"
+      - table: fiscal_devices
+        where: "tenant_id = bucket.tenant_id"
+      - table: document_sequences
+        where: "tenant_id = bucket.tenant_id"
+      - table: contingency_books
+        where: "tenant_id = bucket.tenant_id"
+
+      # Cachicamo parity: credit notes, transfers, manufacturing, picking
+      - table: credit_notes
+        where: "tenant_id = bucket.tenant_id"
+      - table: credit_note_items
+        where: "tenant_id = bucket.tenant_id"
+      - table: inventory_transfers
+        where: "tenant_id = bucket.tenant_id"
+      - table: inventory_transfer_items
+        where: "tenant_id = bucket.tenant_id"
+      - table: manufacturing_orders
+        where: "tenant_id = bucket.tenant_id"
+      - table: manufacturing_bom
+        where: "tenant_id = bucket.tenant_id"
+      - table: picking_lists
+        where: "tenant_id = bucket.tenant_id"
+      - table: picking_items
+        where: "tenant_id = bucket.tenant_id"
+
+      # Cachicamo parity: accounts, API tokens
+      - table: accounts_receivable
+        where: "tenant_id = bucket.tenant_id"
+      - table: accounts_payable
+        where: "tenant_id = bucket.tenant_id"
+      - table: account_payments
+        where: "tenant_id = bucket.tenant_id"
+      - table: api_tokens
+        where: "tenant_id = bucket.tenant_id"
+
       # Proof-of-concept table (Phase 0 test)
       - table: test_items
         where: "tenant_id = bucket.tenant_id"
@@ -32,3 +124,4 @@ bucket_definitions:
   shared_data:
     data:
       - table: exchange_rates
+      - table: plan_limits

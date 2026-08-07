@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
@@ -59,14 +60,24 @@ func main() {
 	authSvc := auth.NewService(pool, jwtSecret)
 	psSvc := powersync.NewService(psJWTSecret)
 
-	// Background workers
-	go webhook.StartWebhookWorker(pool)
-	go fiscal.StartBCVCron(context.Background(), pool, 6*time.Hour)
+	// Background workers with cancellable context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go webhook.StartWebhookWorker(ctx, pool)
+	go fiscal.StartBCVCron(ctx, pool, 6*time.Hour)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:8081", "https://*.chiguire.app"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	// Public
 	r.Post("/auth/register", authSvc.HandleRegister)

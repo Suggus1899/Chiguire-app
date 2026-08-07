@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -34,6 +35,9 @@ func RequireAuth(secret string) func(http.Handler) http.Handler {
 
 			var claims Claims
 			_, err := jwt.ParseWithClaims(tokenStr, &claims, func(t *jwt.Token) (interface{}, error) {
+				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", t.Method.Alg())
+				}
 				return []byte(secret), nil
 			})
 			if err != nil {

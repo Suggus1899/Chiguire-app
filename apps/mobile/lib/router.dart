@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'core/api.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/register_page.dart';
 import 'features/dashboard/dashboard_page.dart';
@@ -37,6 +38,13 @@ import 'features/scanner/scanner_page.dart';
 
 final router = GoRouter(
   initialLocation: '/login',
+  redirect: (context, state) {
+    final isLoggedIn = authApi.accessToken != null;
+    final isAuthRoute = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+    if (!isLoggedIn && !isAuthRoute) return '/login';
+    if (isLoggedIn && isAuthRoute) return '/';
+    return null;
+  },
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),

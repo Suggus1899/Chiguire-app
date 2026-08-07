@@ -1,4 +1,4 @@
-.PHONY: db-create db-drop db-wal migrate migrate-down migrate-create api-gen api-dev web-dev powersync-up powersync-down
+.PHONY: db-create db-drop db-wal migrate migrate-down migrate-create api-gen api-dev web-dev infra-up powersync-up powersync-down
 
 # ─── Local Postgres (no Docker) ─────────────────────────────────────────
 DB_URL ?= postgresql://postgres:1234@localhost:5432/chiguire
@@ -47,6 +47,8 @@ web-build:
 	pnpm --filter web build
 
 # ─── PowerSync (only service that uses Docker) ───────────────────────────
+infra-up: powersync-up
+
 powersync-up:
 	docker compose -f infra/docker/compose.yml up -d
 

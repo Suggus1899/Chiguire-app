@@ -89,12 +89,17 @@ func DispatchEvent(pool *pgxpool.Pool, tenantID, eventType string, payload any) 
 	return tx.Commit(ctx)
 }
 
-func StartWebhookWorker(pool *pgxpool.Pool) {
+func StartWebhookWorker(ctx context.Context, pool *pgxpool.Pool) {
 	go func() {
 		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
-		for range ticker.C {
-			processPending(pool)
+		for {
+			select {
+			case <-ticker.C:
+				processPending(pool)
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 }
