@@ -2,6 +2,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, type Customer, type Product } from '@/lib/api';
+import { toast } from '@/lib/toast';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -21,8 +22,8 @@ export default function NuevaFacturaPage() {
 
   useEffect(() => {
     Promise.all([
-      api.customers.list().catch(() => [] as Customer[]),
-      api.products.list().catch(() => [] as Product[]),
+      api.customers.list().catch((err) => { console.error('operation failed:', err); return [] as Customer[]; }),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
     ]).then(([cust, prod]) => {
       setCustomers(cust);
       setProducts(prod);
@@ -73,7 +74,7 @@ export default function NuevaFacturaPage() {
       }
       router.push('/facturas');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al guardar');
+      toast.error(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
       setSaving(false);
     }

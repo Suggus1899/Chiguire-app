@@ -18,9 +18,9 @@ export default function FiscalPage() {
 
   useEffect(() => {
     Promise.all([
-      api.fiscal.listTaxCategories().catch(() => [] as TaxCategory[]),
-      api.fiscal.listWithholdings().catch(() => [] as Withholding[]),
-      api.fiscal.getExchangeRate('USD').catch(() => null),
+      api.fiscal.listTaxCategories().catch((err) => { console.error('operation failed:', err); return [] as TaxCategory[]; }),
+      api.fiscal.listWithholdings().catch((err) => { console.error('operation failed:', err); return [] as Withholding[]; }),
+      api.fiscal.getExchangeRate('USD').catch((err) => { console.error('operation failed:', err); return null; }),
     ]).then(([tc, wh, r]) => {
       setTaxCategories(tc);
       setWithholdings(wh);

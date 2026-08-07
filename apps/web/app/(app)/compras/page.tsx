@@ -20,8 +20,8 @@ export default function ComprasPage() {
 
   useEffect(() => {
     Promise.all([
-      api.purchases.list().catch(() => [] as PurchaseOrder[]),
-      api.vendors.list().catch(() => [] as Vendor[]),
+      api.purchases.list().catch((err) => { console.error('operation failed:', err); return [] as PurchaseOrder[]; }),
+      api.vendors.list().catch((err) => { console.error('operation failed:', err); return [] as Vendor[]; }),
     ]).then(([po, vend]) => {
       setOrders(po);
       setVendors(vend);

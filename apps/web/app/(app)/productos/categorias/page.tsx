@@ -16,8 +16,8 @@ export default function CategoriasPage() {
 
   useEffect(() => {
     Promise.all([
-      api.categories.list().catch(() => [] as Category[]),
-      api.units.list().catch(() => [] as Unit[]),
+      api.categories.list().catch((err) => { console.error('operation failed:', err); return [] as Category[]; }),
+      api.units.list().catch((err) => { console.error('operation failed:', err); return [] as Unit[]; }),
     ]).then(([cat, uni]) => {
       setCategories(cat);
       setUnits(uni);

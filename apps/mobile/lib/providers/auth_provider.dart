@@ -34,8 +34,8 @@ class AuthNotifier extends Notifier<AuthState> {
     await authApi.register(email, password, fullName);
   }
 
-  void logout() {
-    authApi.logout();
+  Future<void> logout() async {
+    await authApi.logout();
     state = const AuthState();
   }
 }

@@ -7,6 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	mw "github.com/Suggus1899/chiguire/api/internal/middleware"
 )
 
 type Subscription struct {
@@ -32,7 +34,7 @@ type PlanLimit struct {
 func HandleGetSubscription(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var sub Subscription
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`SELECT id, tenant_id, plan, status, stripe_customer_id, stripe_subscription_id,
 				 	current_period_start, current_period_end, cancel_at_period_end
@@ -62,7 +64,7 @@ func HandleUpdatePlan(pool *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, "plan required", http.StatusBadRequest)
 			return
 		}
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(), `UPDATE subscriptions SET plan=$1`, body.Plan)
 			return err
 		})
@@ -96,7 +98,10 @@ func HandleCreateStripeCheckoutSession(pool *pgxpool.Pool) http.HandlerFunc {
 		var body struct {
 			Plan string `json:"plan"`
 		}
-		_ = json.NewDecoder(r.Body).Decode(&body)
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "invalid body", http.StatusBadRequest)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
 			"checkout_url": "https://checkout.stripe.com/placeholder",

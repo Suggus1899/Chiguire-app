@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { api, type Subscription, type OutgoingWebhook, type WebhookDelivery } from '@/lib/api';
+import { toast } from '@/lib/toast';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -17,9 +18,9 @@ export default function ConfiguracionPage() {
 
   useEffect(() => {
     Promise.all([
-      api.saas.getSubscription().catch(() => null),
-      api.webhooks.list().catch(() => [] as OutgoingWebhook[]),
-      api.webhooks.listDeliveries().catch(() => [] as WebhookDelivery[]),
+      api.saas.getSubscription().catch((err) => { console.error('operation failed:', err); return null; }),
+      api.webhooks.list().catch((err) => { console.error('operation failed:', err); return [] as OutgoingWebhook[]; }),
+      api.webhooks.listDeliveries().catch((err) => { console.error('operation failed:', err); return [] as WebhookDelivery[]; }),
     ]).then(([sub, wh, del]) => {
       setSubscription(sub);
       setWebhooks(wh);
@@ -49,9 +50,9 @@ export default function ConfiguracionPage() {
   async function testWebhook(id: string) {
     try {
       const result = await api.webhooks.test(id);
-      alert(`Test: ${result.success ? 'OK' : 'Falló'} (HTTP ${result.status})`);
+      toast.success(`Test: ${result.success ? 'OK' : 'Falló'} (HTTP ${result.status})`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error');
+      toast.error(err instanceof Error ? err.message : 'Error');
     }
   }
 
@@ -80,7 +81,7 @@ export default function ConfiguracionPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error');
+      toast.error(err instanceof Error ? err.message : 'Error');
     }
   }
 

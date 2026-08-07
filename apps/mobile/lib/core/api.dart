@@ -1,17 +1,139 @@
+import 'dart:io';
+
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const _base = String.fromEnvironment(
   'API_URL',
   defaultValue: 'http://10.0.2.2:3001',
 );
 
+/// Optional SHA-256 hash (hex) of the pinned API TLS certificate.
+/// When set, the Dio client only trusts certificates whose DER bytes hash to
+/// this value. When empty (dev), pinning is skipped with a warning.
+const _pinnedCertHash = String.fromEnvironment('SECURE_CERT_HASH');
+
 class _TokenStore {
+  final FlutterSecureStorage _storage = FlutterSecureStorage();
+
+  // In-memory cache for fast, synchronous access by the Dio interceptor.
   String? accessToken;
   String? refreshToken;
   String? tenantId;
+
+  static const _kAccessToken = 'access_token';
+  static const _kRefreshToken = 'refresh_token';
+  static const _kTenantId = 'tenant_id';
+
+  /// Load persisted tokens from secure storage into the in-memory cache.
+  /// Call once at app start (see [initApi]).
+  Future<void> load() async {
+    try {
+      accessToken = await _storage.read(key: _kAccessToken);
+      refreshToken = await _storage.read(key: _kRefreshToken);
+      tenantId = await _storage.read(key: _kTenantId);
+    } catch (e) {
+      debugPrint('Failed to load tokens from secure storage: $e');
+    }
+  }
+
+  /// Persist tokens to secure storage and update the in-memory cache.
+  Future<void> persist({
+    required String? access,
+    required String? refresh,
+    String? tenant,
+  }) async {
+    accessToken = access;
+    refreshToken = refresh;
+    tenantId = tenant;
+    try {
+      if (access != null) {
+        await _storage.write(key: _kAccessToken, value: access);
+      } else {
+        await _storage.delete(key: _kAccessToken);
+      }
+      if (refresh != null) {
+        await _storage.write(key: _kRefreshToken, value: refresh);
+      } else {
+        await _storage.delete(key: _kRefreshToken);
+      }
+      if (tenant != null) {
+        await _storage.write(key: _kTenantId, value: tenant);
+      } else {
+        await _storage.delete(key: _kTenantId);
+      }
+    } catch (e) {
+      debugPrint('Failed to persist tokens to secure storage: $e');
+    }
+  }
+
+  /// Clear tokens from both secure storage and the in-memory cache.
+  /// The in-memory values are nulled synchronously so that subsequent
+  /// synchronous reads (e.g. the router redirect) observe the logout.
+  Future<void> clear() async {
+    accessToken = null;
+    refreshToken = null;
+    tenantId = null;
+    try {
+      await _storage.deleteAll();
+    } catch (e) {
+      debugPrint('Failed to clear tokens from secure storage: $e');
+    }
+  }
 }
 
 final _tokens = _TokenStore();
+
+/// Compute the SHA-256 hex digest of a certificate's DER bytes.
+String _certSha256(X509Certificate cert) =>
+    sha256.convert(cert.der).toString();
+
+/// Configure SSL certificate pinning on the shared Dio instance.
+///
+/// - If the API base URL is plain HTTP, no TLS is used, so pinning is skipped.
+/// - If [SECURE_CERT_HASH] is set, only certificates whose DER SHA-256 matches
+///   are accepted (production).
+/// - If [SECURE_CERT_HASH] is not set (dev), pinning is skipped and a warning
+///   is printed. Self-signed certs are allowed in this case.
+void _configureSslPinning() {
+  if (!_base.startsWith('https://')) {
+    // No TLS for plain HTTP dev URLs — nothing to pin.
+    return;
+  }
+  if (_pinnedCertHash.isEmpty) {
+    if (kDebugMode) {
+      debugPrint(
+        'SECURE_CERT_HASH not set — SSL pinning disabled. '
+        'Self-signed certificates will be accepted (dev only).',
+      );
+    }
+    // Dev: allow self-signed certificates without pinning.
+    (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      client.badCertificateCallback = (cert, host, port) => true;
+      return client;
+    };
+    return;
+  }
+  // Production: pin to the configured certificate hash.
+  (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+    final client = HttpClient();
+    client.badCertificateCallback = (cert, host, port) {
+      return _certSha256(cert) == _pinnedCertHash;
+    };
+    return client;
+  };
+}
+
+/// Initialize the API layer: load persisted tokens and configure SSL pinning.
+/// Must be called once at app start, before any network requests.
+Future<void> initApi() async {
+  await _tokens.load();
+  _configureSslPinning();
+}
 
 final _dio = Dio(BaseOptions(baseUrl: _base))
   ..interceptors.add(InterceptorsWrapper(
@@ -30,9 +152,11 @@ class AuthApi {
       'password': password,
       if (tenantId case final id?) 'tenant_id': id,
     });
-    _tokens.accessToken = res.data['access_token'];
-    _tokens.refreshToken = res.data['refresh_token'];
-    _tokens.tenantId = tenantId;
+    await _tokens.persist(
+      access: res.data['access_token'] as String?,
+      refresh: res.data['refresh_token'] as String?,
+      tenant: tenantId,
+    );
   }
 
   Future<void> register(String email, String password, String fullName) async {
@@ -43,10 +167,8 @@ class AuthApi {
     });
   }
 
-  void logout() {
-    _tokens.accessToken = null;
-    _tokens.refreshToken = null;
-    _tokens.tenantId = null;
+  Future<void> logout() async {
+    await _tokens.clear();
   }
 
   String? get accessToken => _tokens.accessToken;

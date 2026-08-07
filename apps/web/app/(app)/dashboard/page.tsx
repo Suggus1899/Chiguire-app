@@ -11,8 +11,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      api.invoices.list().catch(() => [] as Invoice[]),
-      api.products.list().catch(() => [] as Product[]),
+      api.invoices.list().catch((err) => { console.error('operation failed:', err); return [] as Invoice[]; }),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
     ]).then(([inv, prod]) => {
       setInvoices(inv);
       setProducts(prod);

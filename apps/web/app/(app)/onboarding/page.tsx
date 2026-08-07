@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -30,7 +31,7 @@ export default function OnboardingPage() {
       await api.fiscalDevices.create({ name: fiscal.name, type: fiscal.type, model: fiscal.model, serial: fiscal.serial });
       router.push('/dashboard');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al guardar');
+      toast.error(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
       setSaving(false);
     }

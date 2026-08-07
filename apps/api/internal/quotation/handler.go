@@ -1,8 +1,10 @@
 package quotation
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -78,7 +80,7 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 
 		tid := mw.TenantIDFrom(r.Context())
 		var q Quotation
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			if err := tx.QueryRow(r.Context(),
 				`INSERT INTO quotations (tenant_id, number, customer_id, status, currency, subtotal, discount_total, tax_total, total, valid_days, valid_until)
 				 VALUES ($1,$2,$3,'draft',$4,$5,$6,$7,$8,$9,$10)
@@ -113,11 +115,23 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		status := r.URL.Query().Get("status")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var qs []Quotation
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, tenant_id, number, customer_id, status, currency, subtotal, discount_total, tax_total, total, valid_days, valid_until, converted_invoice_id, created_at
-				 FROM quotations WHERE ($1 = '' OR status = $1) ORDER BY created_at DESC`, status)
+				 FROM quotations WHERE ($1 = '' OR status = $1) ORDER BY created_at DESC LIMIT $2 OFFSET $3`, status, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -134,6 +148,7 @@ func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -150,7 +165,7 @@ func HandleGet(pool *pgxpool.Pool) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		var q Quotation
 		var items []QuotationItem
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			if err := tx.QueryRow(r.Context(),
 				`SELECT id, tenant_id, number, customer_id, status, currency, subtotal, discount_total, tax_total, total, valid_days, valid_until, converted_invoice_id, created_at
 				 FROM quotations WHERE id=$1`, id,
@@ -208,7 +223,7 @@ func HandleUpdate(pool *pgxpool.Pool) http.HandlerFunc {
 			vu := time.Now().AddDate(0, 0, body.ValidDays)
 			validUntil = &vu
 		}
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(),
 				`UPDATE quotations SET currency=$2, subtotal=$3, discount_total=$4, tax_total=$5, total=$6, valid_days=$7, valid_until=$8
 				 WHERE id=$1`,
@@ -240,7 +255,7 @@ func HandleAddItem(pool *pgxpool.Pool) http.HandlerFunc {
 		}
 		tid := mw.TenantIDFrom(r.Context())
 		var item QuotationItem
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`INSERT INTO quotation_items (tenant_id, quotation_id, product_id, description, qty, unit_price, discount_pct, line_total)
 				 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -262,7 +277,7 @@ func HandleAddItem(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleRemoveItem(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		itemID := chi.URLParam(r, "itemId")
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(), `DELETE FROM quotation_items WHERE id=$1`, itemID)
 			return err
 		})
@@ -281,7 +296,7 @@ func HandleConvertToInvoice(pool *pgxpool.Pool) http.HandlerFunc {
 		var result struct {
 			InvoiceID string `json:"invoice_id"`
 		}
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			var q Quotation
 			if err := tx.QueryRow(r.Context(),
 				`SELECT id, number, customer_id, currency, subtotal, discount_total, tax_total, total
@@ -338,7 +353,7 @@ func HandleConvertToInvoice(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleSendQuote(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(), `UPDATE quotations SET status='sent' WHERE id=$1`, id)
 			return err
 		})

@@ -1,11 +1,12 @@
 package accountspayable
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -55,10 +56,22 @@ const payCols = `id, account_type, account_id::text, amount::text, COALESCE(paym
 func HandleListReceivable(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		status := r.URL.Query().Get("status")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []Receivable
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
-				`SELECT `+arCols+` FROM accounts_receivable WHERE ($1='' OR status=$1) ORDER BY created_at DESC`, status)
+				`SELECT `+arCols+` FROM accounts_receivable WHERE ($1='' OR status=$1) ORDER BY created_at DESC LIMIT $2 OFFSET $3`, status, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -73,6 +86,7 @@ func HandleListReceivable(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -88,10 +102,22 @@ func HandleListReceivable(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleListPayable(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		status := r.URL.Query().Get("status")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []Payable
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
-				`SELECT `+apCols+` FROM accounts_payable WHERE ($1='' OR status=$1) ORDER BY created_at DESC`, status)
+				`SELECT `+apCols+` FROM accounts_payable WHERE ($1='' OR status=$1) ORDER BY created_at DESC LIMIT $2 OFFSET $3`, status, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -106,6 +132,7 @@ func HandleListPayable(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -169,6 +196,7 @@ func HandleCreatePayment(pool *pgxpool.Pool) http.HandlerFunc {
 			return err
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -182,10 +210,22 @@ func HandleCreatePayment(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleListPayments(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accountType := r.URL.Query().Get("account_type")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []Payment
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
-				`SELECT `+payCols+` FROM account_payments WHERE ($1='' OR account_type=$1) ORDER BY paid_at DESC`, accountType)
+				`SELECT `+payCols+` FROM account_payments WHERE ($1='' OR account_type=$1) ORDER BY paid_at DESC LIMIT $2 OFFSET $3`, accountType, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -200,6 +240,7 @@ func HandleListPayments(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -214,7 +255,6 @@ func HandleListPayments(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleSendReminder(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
 		var body struct {
 			Channel string `json:"channel"`
 			To      string `json:"to"`
@@ -230,8 +270,6 @@ func HandleSendReminder(pool *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, "channel must be sms or email", http.StatusBadRequest)
 			return
 		}
-
-		_ = id
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{

@@ -1,8 +1,10 @@
 package webhook
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -47,7 +49,7 @@ func HandleCreateWebhook(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		var wh Webhook
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`INSERT INTO outgoing_webhooks (tenant_id, url, events, secret, is_active)
 				 VALUES ($1,$2,$3,$4,true)
@@ -67,10 +69,22 @@ func HandleCreateWebhook(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListWebhooks(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var whs []Webhook
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT id, tenant_id, url, events, is_active FROM outgoing_webhooks ORDER BY id`)
+				`SELECT id, tenant_id, url, events, is_active FROM outgoing_webhooks ORDER BY id LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -85,6 +99,7 @@ func HandleListWebhooks(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -99,7 +114,7 @@ func HandleListWebhooks(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleDeleteWebhook(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(), `DELETE FROM outgoing_webhooks WHERE id=$1`, id)
 			return err
 		})
@@ -115,7 +130,7 @@ func HandleTestWebhook(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		var wh Webhook
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`SELECT id, tenant_id, url, events, secret, is_active FROM outgoing_webhooks WHERE id=$1`, id,
 			).Scan(&wh.ID, &wh.TenantID, &wh.URL, &wh.Events, &wh.Secret, &wh.IsActive)
@@ -137,11 +152,23 @@ func HandleTestWebhook(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListDeliveries(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var ds []Delivery
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, tenant_id, webhook_id, event_type, payload, status, attempts, last_response
-				 FROM webhook_deliveries ORDER BY id DESC LIMIT 100`)
+				 FROM webhook_deliveries ORDER BY id DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -157,6 +184,7 @@ func HandleListDeliveries(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

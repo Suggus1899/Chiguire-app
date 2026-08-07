@@ -20,9 +20,9 @@ export default function ManufacturaPage() {
 
   useEffect(() => {
     Promise.all([
-      api.manufacturing.list().catch(() => [] as ManufacturingOrder[]),
-      api.warehouses.list().catch(() => [] as Warehouse[]),
-      api.products.list().catch(() => [] as Product[]),
+      api.manufacturing.list().catch((err) => { console.error('operation failed:', err); return [] as ManufacturingOrder[]; }),
+      api.warehouses.list().catch((err) => { console.error('operation failed:', err); return [] as Warehouse[]; }),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
     ]).then(([o, wh, prod]) => {
       setOrders(o); setWarehouses(wh); setProducts(prod);
       setLoading(false);

@@ -1,9 +1,11 @@
 package creditnote
 
 import (
+	"log"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -117,6 +119,7 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 			return err
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -127,6 +130,7 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&cn.ID, &cn.InvoiceID, &cn.Number, &cn.Type, &cn.Reason, &cn.Subtotal, &cn.TaxTotal, &cn.Total, &cn.Status, &cn.IssuedAt, &cn.CreatedAt, &cn.UpdatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -141,10 +145,22 @@ func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cnType := r.URL.Query().Get("type")
 		status := r.URL.Query().Get("status")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var cns []CreditNote
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+cnCols+` FROM credit_notes WHERE ($1='' OR type=$1) AND ($2='' OR status=$2) ORDER BY created_at DESC`, cnType, status)
+				`SELECT `+cnCols+` FROM credit_notes WHERE ($1='' OR type=$1) AND ($2='' OR status=$2) ORDER BY created_at DESC LIMIT $3 OFFSET $4`, cnType, status, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -159,6 +175,7 @@ func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

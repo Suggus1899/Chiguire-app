@@ -22,7 +22,7 @@ export default function ComisionesPage() {
   useEffect(() => {
     api.sellers.list()
       .then(setSellers)
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -30,7 +30,7 @@ export default function ComisionesPage() {
     if (sellerFilter !== 'all') {
       api.sellers.listCommissions(sellerFilter)
         .then(setCommissions)
-        .catch(() => setCommissions([]));
+        .catch((err) => { console.error('operation failed:', err); setCommissions([]); });
     } else {
       setCommissions([]);
     }

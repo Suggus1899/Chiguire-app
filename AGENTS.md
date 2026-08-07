@@ -58,6 +58,26 @@ make web-dev
 - Authoritative writes (emit invoice number, process payment): POST to API, mark `pending_emission` locally while offline, reconcile on reconnect.
 - Stock tracked via `stock_movements` (append-only). Never update absolute quantity directly.
 
+## Git Hooks
+A pre-commit hook (`scripts/pre-commit.sh`) runs Go vet, Go build, and the
+web build before each commit is accepted.
+
+Install it once per clone by pointing Git at the `scripts` directory:
+```bash
+# Install hooks (run once)
+git config core.hooksPath scripts
+```
+The hook file is `scripts/pre-commit.sh`. Ensure it is executable
+(`chmod +x scripts/pre-commit.sh` on Unix). On Windows, Git for Windows
+honors `core.hooksPath` as well.
+
+## CI
+GitHub Actions runs on every push/PR to `main` (see
+`.github/workflows/ci.yml`):
+- **Go API**: build, test, vet (with a Postgres 16 service container).
+- **Web (Next.js)**: install with pnpm and build.
+- **Flutter Mobile**: analyze and test.
+
 ## Phases
 | Phase | What |
 |---|---|

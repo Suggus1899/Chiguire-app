@@ -16,7 +16,7 @@ export default function MetodosPagoPage() {
   useEffect(() => {
     api.paymentMethods.list()
       .then(setMethods)
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, []);
 

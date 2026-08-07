@@ -20,9 +20,9 @@ export default function NotasCreditoPage() {
 
   useEffect(() => {
     Promise.all([
-      api.creditNotes.list().catch(() => [] as CreditNote[]),
-      api.invoices.list().catch(() => [] as Invoice[]),
-      api.products.list().catch(() => [] as Product[]),
+      api.creditNotes.list().catch((err) => { console.error('operation failed:', err); return [] as CreditNote[]; }),
+      api.invoices.list().catch((err) => { console.error('operation failed:', err); return [] as Invoice[]; }),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
     ]).then(([n, inv, prod]) => {
       setNotes(n);
       setInvoices(inv);

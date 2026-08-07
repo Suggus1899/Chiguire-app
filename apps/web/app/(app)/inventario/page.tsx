@@ -17,9 +17,9 @@ export default function InventarioPage() {
 
   useEffect(() => {
     Promise.all([
-      api.stock.listMovements().catch(() => [] as StockMovement[]),
-      api.products.list().catch(() => [] as Product[]),
-      api.warehouses.list().catch(() => [] as Warehouse[]),
+      api.stock.listMovements().catch((err) => { console.error('operation failed:', err); return [] as StockMovement[]; }),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
+      api.warehouses.list().catch((err) => { console.error('operation failed:', err); return [] as Warehouse[]; }),
     ]).then(([mov, prod, wh]) => {
       setMovements(mov);
       setProducts(prod);

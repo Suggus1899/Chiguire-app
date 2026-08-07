@@ -1,8 +1,10 @@
 package purchase
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -67,7 +69,7 @@ func HandleCreatePO(pool *pgxpool.Pool) http.HandlerFunc {
 
 		tid := mw.TenantIDFrom(r.Context())
 		var po PurchaseOrder
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			if err := tx.QueryRow(r.Context(),
 				`INSERT INTO purchase_orders (tenant_id, vendor_id, number, status, currency, subtotal, tax_total, total)
 				 VALUES ($1,$2,$3,'draft',$4,$5,$6,$7)
@@ -102,11 +104,23 @@ func HandleCreatePO(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleListPOs(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		status := r.URL.Query().Get("status")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var pos []PurchaseOrder
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, tenant_id, vendor_id, number, status, currency, subtotal, tax_total, total, created_at
-				 FROM purchase_orders WHERE ($1 = '' OR status = $1) ORDER BY created_at DESC`, status)
+				 FROM purchase_orders WHERE ($1 = '' OR status = $1) ORDER BY created_at DESC LIMIT $2 OFFSET $3`, status, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -122,6 +136,7 @@ func HandleListPOs(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -138,7 +153,7 @@ func HandleGetPO(pool *pgxpool.Pool) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		var po PurchaseOrder
 		var items []POItem
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			if err := tx.QueryRow(r.Context(),
 				`SELECT id, tenant_id, vendor_id, number, status, currency, subtotal, tax_total, total, created_at
 				 FROM purchase_orders WHERE id=$1`, id,
@@ -189,7 +204,7 @@ func HandleUpdatePO(pool *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, "invalid body", http.StatusBadRequest)
 			return
 		}
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(),
 				`UPDATE purchase_orders SET vendor_id=$2, currency=$3, subtotal=$4, tax_total=$5, total=$6
 				 WHERE id=$1`,
@@ -207,7 +222,7 @@ func HandleUpdatePO(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleApprovePO(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(),
 				`UPDATE purchase_orders SET status='approved' WHERE id=$1`, id)
 			return err
@@ -236,7 +251,7 @@ func HandleAddPOItem(pool *pgxpool.Pool) http.HandlerFunc {
 		}
 		tid := mw.TenantIDFrom(r.Context())
 		var item POItem
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`INSERT INTO purchase_order_items (tenant_id, purchase_order_id, product_id, description, qty_ordered, qty_received, unit_cost, line_total)
 				 VALUES ($1,$2,$3,$4,$5,0,$6,$7)
@@ -268,7 +283,7 @@ func HandleReceivePOItem(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		tid := mw.TenantIDFrom(r.Context())
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			var productID string
 			if err := tx.QueryRow(r.Context(),
 				`UPDATE purchase_order_items SET qty_received = qty_received + $2

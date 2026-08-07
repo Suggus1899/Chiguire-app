@@ -91,7 +91,7 @@ class _SellerListPageState extends State<SellerListPage> {
                               itemCount: _filtered.length,
                               itemBuilder: (context, i) {
                                 final s = _filtered[i];
-                                final active = s['is_active'] == true || s['is_active'] == 0;
+                                final active = s['is_active'] == true || s['is_active'] == 1;
                                 return ListTile(
                                   leading: const CircleAvatar(child: Icon(Icons.person)),
                                   title: Text(s['name']?.toString() ?? 'Sin nombre'),

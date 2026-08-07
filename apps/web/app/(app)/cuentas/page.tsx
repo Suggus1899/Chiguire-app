@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api, type AccountItem, type PaymentMethod } from '@/lib/api';
+import { toast } from '@/lib/toast';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -19,13 +20,13 @@ export default function CuentasPage() {
   const [reminderChannel, setReminderChannel] = useState<'sms' | 'email'>('sms');
 
   useEffect(() => {
-    api.paymentMethods.list().catch(() => [] as PaymentMethod[]).then(setMethods);
+    api.paymentMethods.list().catch((err) => { console.error('operation failed:', err); return [] as PaymentMethod[]; }).then(setMethods);
   }, []);
 
   useEffect(() => {
     setLoading(true);
     const fetcher = tab === 'receivable' ? api.accountsPayable.listReceivable : api.accountsPayable.listPayable;
-    fetcher().then(setItems).catch(() => setItems([])).finally(() => setLoading(false));
+    fetcher().then(setItems).catch((err) => { console.error('operation failed:', err); setItems([]); }).finally(() => setLoading(false));
   }, [tab]);
 
   const filtered = items.filter((i) => statusFilter === 'all' ? true : i.status === statusFilter);
@@ -46,7 +47,7 @@ export default function CuentasPage() {
     if (!reminderModal) return;
     await api.accountsPayable.sendReminder(reminderModal.id, { channel: reminderChannel });
     setReminderModal(null);
-    alert('Recordatorio enviado');
+    toast.success('Recordatorio enviado');
   }
 
   return (

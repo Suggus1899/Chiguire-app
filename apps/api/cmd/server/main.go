@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -12,6 +14,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"golang.org/x/time/rate"
 
 	"github.com/Suggus1899/chiguire/api/internal/accountspayable"
 	"github.com/Suggus1899/chiguire/api/internal/apitoken"
@@ -78,6 +81,7 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
+	r.Use(rateLimiter())
 
 	// Public
 	r.Post("/auth/register", authSvc.HandleRegister)
@@ -382,4 +386,38 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// rateLimiter returns a per-IP rate limiting middleware allowing 100 req/s
+// with a burst of 200.
+func rateLimiter() func(http.Handler) http.Handler {
+	var (
+		mu       sync.Mutex
+		limiters = make(map[string]*rate.Limiter)
+	)
+
+	getLimiter := func(ip string) *rate.Limiter {
+		mu.Lock()
+		defer mu.Unlock()
+		l, ok := limiters[ip]
+		if !ok {
+			l = rate.NewLimiter(rate.Limit(100), 200)
+			limiters[ip] = l
+		}
+		return l
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				ip = r.RemoteAddr
+			}
+			if !getLimiter(ip).Allow() {
+				http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

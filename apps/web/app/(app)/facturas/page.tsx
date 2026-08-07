@@ -13,7 +13,7 @@ export default function FacturasPage() {
   useEffect(() => {
     api.invoices.list()
       .then(setInvoices)
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, []);
 

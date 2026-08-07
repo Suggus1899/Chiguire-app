@@ -1,8 +1,10 @@
 package tenant
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -81,16 +83,29 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := mw.UserIDFrom(r.Context())
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 
 		rows, err := pool.Query(r.Context(),
 			`SELECT t.id, t.name, t.slug, t.plan, t.trial_ends_at, t.created_at
 			 FROM tenants t
 			 JOIN user_tenants ut ON ut.tenant_id = t.id
 			 WHERE ut.user_id = $1
-			 ORDER BY t.created_at DESC`,
-			userID,
+			 ORDER BY t.created_at DESC LIMIT $2 OFFSET $3`,
+			userID, perPage, offset,
 		)
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

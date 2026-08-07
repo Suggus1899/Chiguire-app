@@ -21,9 +21,9 @@ export default function TransferenciasPage() {
 
   useEffect(() => {
     Promise.all([
-      api.transfers.list().catch(() => [] as Transfer[]),
-      api.warehouses.list().catch(() => [] as Warehouse[]),
-      api.products.list().catch(() => [] as Product[]),
+      api.transfers.list().catch((err) => { console.error('operation failed:', err); return [] as Transfer[]; }),
+      api.warehouses.list().catch((err) => { console.error('operation failed:', err); return [] as Warehouse[]; }),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
     ]).then(([t, wh, prod]) => {
       setTransfers(t);
       setWarehouses(wh);

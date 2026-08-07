@@ -1,8 +1,10 @@
 package report
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -27,6 +29,18 @@ func HandleSalesBook(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from := r.URL.Query().Get("from")
 		to := r.URL.Query().Get("to")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []SalesBookEntry
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
@@ -36,7 +50,7 @@ func HandleSalesBook(pool *pgxpool.Pool) http.HandlerFunc {
 				 WHERE status IN ('issued','paid','partial')
 				   AND ($1='' OR issued_at >= $1::timestamptz)
 				   AND ($2='' OR issued_at <= $2::timestamptz)
-				 ORDER BY issued_at DESC`, from, to)
+				 ORDER BY issued_at DESC LIMIT $3 OFFSET $4`, from, to, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -51,6 +65,7 @@ func HandleSalesBook(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -75,6 +90,18 @@ func HandlePurchasesBook(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from := r.URL.Query().Get("from")
 		to := r.URL.Query().Get("to")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []PurchasesBookEntry
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
@@ -83,7 +110,7 @@ func HandlePurchasesBook(pool *pgxpool.Pool) http.HandlerFunc {
 				 WHERE status IN ('approved','received')
 				   AND ($1='' OR created_at >= $1::timestamptz)
 				   AND ($2='' OR created_at <= $2::timestamptz)
-				 ORDER BY created_at DESC`, from, to)
+				 ORDER BY created_at DESC LIMIT $3 OFFSET $4`, from, to, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -98,6 +125,7 @@ func HandlePurchasesBook(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -120,6 +148,18 @@ func HandleInventoryCurrent(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		warehouseID := r.URL.Query().Get("warehouse_id")
 		productID := r.URL.Query().Get("product_id")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []InventoryCurrentRow
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
@@ -127,7 +167,7 @@ func HandleInventoryCurrent(pool *pgxpool.Pool) http.HandlerFunc {
 				 FROM stock_movements
 				 WHERE ($1='' OR warehouse_id=$1::uuid) AND ($2='' OR product_id=$2::uuid)
 				 GROUP BY warehouse_id, product_id
-				 ORDER BY warehouse_id, product_id`, warehouseID, productID)
+				 ORDER BY warehouse_id, product_id LIMIT $3 OFFSET $4`, warehouseID, productID, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -142,6 +182,7 @@ func HandleInventoryCurrent(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -167,6 +208,18 @@ type InventoryValuedRow struct {
 
 func HandleInventoryValued(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []InventoryValuedRow
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
@@ -184,7 +237,7 @@ func HandleInventoryValued(pool *pgxpool.Pool) http.HandlerFunc {
 				   ORDER BY valid_from DESC LIMIT 1
 				 ) pp ON true
 				 GROUP BY sm.warehouse_id, sm.product_id, p.name, p.avg_cost_usd, pp.amount
-				 ORDER BY sm.warehouse_id, p.name`)
+				 ORDER BY sm.warehouse_id, p.name LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -199,6 +252,7 @@ func HandleInventoryValued(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -226,6 +280,18 @@ func HandleKardex(pool *pgxpool.Pool) http.HandlerFunc {
 		from := r.URL.Query().Get("from")
 		to := r.URL.Query().Get("to")
 		productID := r.URL.Query().Get("product_id")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []KardexRow
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
@@ -234,7 +300,7 @@ func HandleKardex(pool *pgxpool.Pool) http.HandlerFunc {
 				 WHERE ($1='' OR created_at >= $1::timestamptz)
 				   AND ($2='' OR created_at <= $2::timestamptz)
 				   AND ($3='' OR product_id=$3::uuid)
-				 ORDER BY created_at DESC`, from, to, productID)
+				 ORDER BY created_at DESC LIMIT $4 OFFSET $5`, from, to, productID, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -249,6 +315,7 @@ func HandleKardex(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -274,6 +341,18 @@ func HandleArt177(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from := r.URL.Query().Get("from")
 		to := r.URL.Query().Get("to")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []Art177Row
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
@@ -286,7 +365,7 @@ func HandleArt177(pool *pgxpool.Pool) http.HandlerFunc {
 				 WHERE ($1='' OR sm.created_at >= $1::timestamptz)
 				   AND ($2='' OR sm.created_at <= $2::timestamptz)
 				 GROUP BY sm.warehouse_id, sm.product_id, p.name, p.avg_cost_usd
-				 ORDER BY sm.warehouse_id, p.name`, from, to)
+				 ORDER BY sm.warehouse_id, p.name LIMIT $3 OFFSET $4`, from, to, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -301,6 +380,7 @@ func HandleArt177(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -326,6 +406,18 @@ func HandleIGTFReport(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from := r.URL.Query().Get("from")
 		to := r.URL.Query().Get("to")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var rows []IGTFRow
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			q, err := tx.Query(r.Context(),
@@ -334,7 +426,7 @@ func HandleIGTFReport(pool *pgxpool.Pool) http.HandlerFunc {
 				 WHERE igt_amount > 0
 				   AND ($1='' OR paid_at >= $1::timestamptz)
 				   AND ($2='' OR paid_at <= $2::timestamptz)
-				 ORDER BY paid_at DESC`, from, to)
+				 ORDER BY paid_at DESC LIMIT $3 OFFSET $4`, from, to, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -349,6 +441,7 @@ func HandleIGTFReport(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

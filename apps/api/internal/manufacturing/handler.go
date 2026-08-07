@@ -1,9 +1,11 @@
 package manufacturing
 
 import (
+	"log"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -96,6 +98,7 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 			return nil
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -109,10 +112,22 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		status := r.URL.Query().Get("status")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var mos []ManufacturingOrder
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+moCols+` FROM manufacturing_orders WHERE ($1='' OR status=$1) ORDER BY created_at DESC`, status)
+				`SELECT `+moCols+` FROM manufacturing_orders WHERE ($1='' OR status=$1) ORDER BY created_at DESC LIMIT $2 OFFSET $3`, status, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -127,6 +142,7 @@ func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

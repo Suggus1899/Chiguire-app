@@ -18,8 +18,8 @@ export default function CotizacionesPage() {
 
   useEffect(() => {
     Promise.all([
-      api.quotations.list().catch(() => [] as Quotation[]),
-      api.customers.list().catch(() => [] as Customer[]),
+      api.quotations.list().catch((err) => { console.error('operation failed:', err); return [] as Quotation[]; }),
+      api.customers.list().catch((err) => { console.error('operation failed:', err); return [] as Customer[]; }),
     ]).then(([quotes, cust]) => {
       setQuotations(quotes);
       setCustomers(cust);

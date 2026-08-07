@@ -3,7 +3,9 @@ package seller
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -65,6 +67,7 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&s.ID, &s.UserID, &s.Name, &s.Email, &s.Phone, &s.CommissionPct, &s.IsActive, &s.CreatedAt, &s.UpdatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -77,10 +80,22 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var sellers []Seller
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+sellerCols+` FROM sellers ORDER BY created_at DESC`)
+				`SELECT `+sellerCols+` FROM sellers ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -95,6 +110,7 @@ func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -197,6 +213,18 @@ func HandleListCommissions(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sellerID := chi.URLParam(r, "id")
 		period := r.URL.Query().Get("period")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		type commissionRow struct {
 			ID               string `json:"id"`
 			VendorUserID     string `json:"vendor_user_id"`
@@ -215,7 +243,8 @@ func HandleListCommissions(pool *pgxpool.Pool) http.HandlerFunc {
 				 FROM sales_commissions sc
 				 JOIN sellers s ON s.user_id = sc.vendor_user_id
 				 WHERE s.id=$1 AND ($2='' OR sc.period=$2)
-				 ORDER BY sc.period DESC`, sellerID, period)
+				 ORDER BY sc.period DESC
+				 LIMIT $3 OFFSET $4`, sellerID, period, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -230,6 +259,7 @@ func HandleListCommissions(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -259,28 +289,36 @@ func HandleMarkCommissionsPaid(pool *pgxpool.Pool) http.HandlerFunc {
 		}
 
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
-			var sellerID string
-			for i, cid := range body.CommissionIDs {
-				var sid string
-				err := tx.QueryRow(r.Context(),
-					`SELECT s.id FROM sales_commissions sc JOIN sellers s ON s.user_id=sc.vendor_user_id WHERE sc.id=$1`, cid,
-				).Scan(&sid)
-				if err != nil {
-					return errors.New("commission not found")
-				}
-				if i == 0 {
-					sellerID = sid
-				} else if sid != sellerID {
-					return errors.New("all commissions must belong to the same seller")
-				}
+			// Fetch all seller IDs for the given commission IDs in a single query.
+			rows, err := tx.Query(r.Context(),
+				`SELECT s.id FROM sales_commissions sc
+				 JOIN sellers s ON s.user_id = sc.vendor_user_id
+				 WHERE sc.id = ANY($1)`, body.CommissionIDs)
+			if err != nil {
+				return err
 			}
-			for _, cid := range body.CommissionIDs {
-				if _, err := tx.Exec(r.Context(),
-					`UPDATE sales_commissions SET status='paid' WHERE id=$1`, cid); err != nil {
+			defer rows.Close()
+			sellerSet := make(map[string]struct{})
+			for rows.Next() {
+				var sid string
+				if err := rows.Scan(&sid); err != nil {
 					return err
 				}
+				sellerSet[sid] = struct{}{}
 			}
-			return nil
+			if err := rows.Err(); err != nil {
+				return err
+			}
+			if len(sellerSet) == 0 {
+				return errors.New("commission not found")
+			}
+			if len(sellerSet) > 1 {
+				return errors.New("all commissions must belong to the same seller")
+			}
+			// Single UPDATE for all matching commission IDs.
+			_, err = tx.Exec(r.Context(),
+				`UPDATE sales_commissions SET status='paid' WHERE id = ANY($1)`, body.CommissionIDs)
+			return err
 		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -295,6 +333,18 @@ func HandleMarkCommissionsPaid(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleListCommissionLimits(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sellerID := chi.URLParam(r, "id")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		type limitRow struct {
 			ProductID   string `json:"product_id"`
 			ProductName string `json:"product_name"`
@@ -307,7 +357,8 @@ func HandleListCommissionLimits(pool *pgxpool.Pool) http.HandlerFunc {
 				 FROM products p
 				 CROSS JOIN sellers s
 				 WHERE s.id=$1
-				 ORDER BY p.name`, sellerID)
+				 ORDER BY p.name
+				 LIMIT $2 OFFSET $3`, sellerID, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -322,6 +373,7 @@ func HandleListCommissionLimits(pool *pgxpool.Pool) http.HandlerFunc {
 			return q.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api, type Product } from '@/lib/api';
+import { toast } from '@/lib/toast';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -25,7 +26,7 @@ export default function InformesPage() {
   const [params, setParams] = useState<Record<string, { from: string; to: string; productId: string }>>({});
 
   useEffect(() => {
-    api.products.list().catch(() => [] as Product[]).then(setProducts);
+    api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }).then(setProducts);
   }, []);
 
   async function generate(r: { key: ReportKey; needsDates: boolean; needsProduct: boolean }) {
@@ -42,7 +43,7 @@ export default function InformesPage() {
       else data = await api.reports.igtfReport(p.from, p.to);
       setResults((prev) => ({ ...prev, [r.key]: data }));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al generar');
+      toast.error(err instanceof Error ? err.message : 'Error al generar');
     } finally {
       setLoading(null);
     }

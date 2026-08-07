@@ -33,7 +33,13 @@ class InvoiceListNotifier extends Notifier<InvoiceListState> {
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final local = await db.getAll('SELECT * FROM invoices ORDER BY created_at DESC');
+      final tenantId = authApi.tenantId;
+      final local = tenantId != null
+          ? await db.getAll(
+              'SELECT * FROM invoices WHERE tenant_id = ? ORDER BY created_at DESC',
+              [tenantId],
+            )
+          : await db.getAll('SELECT * FROM invoices ORDER BY created_at DESC');
       final rows = local.map((r) => Map<String, dynamic>.from(r)).toList();
       state = InvoiceListState(invoices: rows);
       try {

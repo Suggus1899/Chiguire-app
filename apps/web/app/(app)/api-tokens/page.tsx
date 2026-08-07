@@ -18,7 +18,7 @@ export default function ApiTokensPage() {
   useEffect(() => {
     api.apiTokens.list()
       .then(setTokens)
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -28,7 +28,7 @@ export default function ApiTokensPage() {
     setNewToken(res.token);
     setForm({ name: '', expires_at: '' });
     setShowForm(false);
-    api.apiTokens.list().then(setTokens).catch(() => {});
+    api.apiTokens.list().then(setTokens).catch((err) => console.error('operation failed:', err));
   }
 
   async function revoke(id: string) {

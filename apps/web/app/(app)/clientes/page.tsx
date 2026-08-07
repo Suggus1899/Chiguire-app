@@ -15,7 +15,7 @@ export default function ClientesPage() {
   useEffect(() => {
     api.customers.list()
       .then(setCustomers)
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, []);
 

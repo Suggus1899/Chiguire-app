@@ -18,9 +18,9 @@ export default function ProductosPage() {
 
   useEffect(() => {
     Promise.all([
-      api.products.list().catch(() => [] as Product[]),
-      api.categories.list().catch(() => [] as Category[]),
-      api.units.list().catch(() => [] as Unit[]),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
+      api.categories.list().catch((err) => { console.error('operation failed:', err); return [] as Category[]; }),
+      api.units.list().catch((err) => { console.error('operation failed:', err); return [] as Unit[]; }),
     ]).then(([prod, cat, uni]) => {
       setProducts(prod);
       setCategories(cat);

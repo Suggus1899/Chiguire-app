@@ -1,9 +1,11 @@
 package product
 
 import (
+	"log"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -93,10 +95,22 @@ func HandleCreateProduct(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListProducts(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var products []Product
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+productCols+` FROM products ORDER BY created_at DESC`)
+				`SELECT `+productCols+` FROM products ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -111,6 +125,7 @@ func HandleListProducts(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -248,6 +263,7 @@ func HandleCreateCategory(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&c.ID, &c.Name, &c.ParentID, &c.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -260,10 +276,22 @@ func HandleCreateCategory(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListCategories(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var cats []Category
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+categoryCols+` FROM product_categories ORDER BY name`)
+				`SELECT `+categoryCols+` FROM product_categories ORDER BY name LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -278,6 +306,7 @@ func HandleListCategories(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -345,6 +374,7 @@ func HandleCreateUnit(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&u.ID, &u.Name, &u.Abbreviation, &u.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -357,10 +387,22 @@ func HandleCreateUnit(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListUnits(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var units []Unit
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT id, name, abbreviation, created_at FROM units_of_measure ORDER BY name`)
+				`SELECT id, name, abbreviation, created_at FROM units_of_measure ORDER BY name LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -375,6 +417,7 @@ func HandleListUnits(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -445,6 +488,7 @@ func HandleCreatePrice(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&p.ID, &p.ProductID, &p.Currency, &p.Amount, &p.ValidFrom, &p.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -458,11 +502,23 @@ func HandleCreatePrice(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleListPrices(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		productID := chi.URLParam(r, "id")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var prices []Price
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, product_id::text, currency, amount::text, valid_from, created_at
-				 FROM product_prices WHERE product_id=$1 ORDER BY valid_from DESC`, productID)
+				 FROM product_prices WHERE product_id=$1 ORDER BY valid_from DESC LIMIT $2 OFFSET $3`, productID, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -477,6 +533,7 @@ func HandleListPrices(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

@@ -16,8 +16,8 @@ export default function PagosPage() {
 
   useEffect(() => {
     Promise.all([
-      api.payments.listLinks().catch(() => [] as PaymentLink[]),
-      api.invoices.list().catch(() => [] as Invoice[]),
+      api.payments.listLinks().catch((err) => { console.error('operation failed:', err); return [] as PaymentLink[]; }),
+      api.invoices.list().catch((err) => { console.error('operation failed:', err); return [] as Invoice[]; }),
     ]).then(([lnk, inv]) => {
       setLinks(lnk);
       setInvoices(inv);

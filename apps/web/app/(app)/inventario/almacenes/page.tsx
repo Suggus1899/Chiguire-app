@@ -16,8 +16,8 @@ export default function AlmacenesPage() {
 
   useEffect(() => {
     Promise.all([
-      api.branches.list().catch(() => [] as Branch[]),
-      api.warehouses.list().catch(() => [] as Warehouse[]),
+      api.branches.list().catch((err) => { console.error('operation failed:', err); return [] as Branch[]; }),
+      api.warehouses.list().catch((err) => { console.error('operation failed:', err); return [] as Warehouse[]; }),
     ]).then(([br, wh]) => {
       setBranches(br);
       setWarehouses(wh);

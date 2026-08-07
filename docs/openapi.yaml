@@ -1,0 +1,1211 @@
+openapi: 3.0.3
+info:
+  title: Chiguire ERP API
+  version: 1.0.0
+  description: |
+    Offline-first multi-tenant ERP API for the Venezuelan market.
+
+    Provides authentication, multi-tenant management, customers, products,
+    invoicing (with fiscal emission), multi-currency payments, seller
+    commissions, and fiscal/reporting endpoints.
+
+    All business endpoints require a valid JWT bearer token. The token
+    encodes the `tenant_id` used to scope every query via PostgreSQL
+    Row-Level Security.
+  contact:
+    name: Chiguire ERP
+    url: https://github.com/cognition/chiguire-app
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Authentication and token management
+  - name: Tenants
+    description: Tenant (organization) management
+  - name: Customers
+    description: Customer records
+  - name: Products
+    description: Product catalog and stock
+  - name: Invoices
+    description: Invoicing and fiscal emission
+  - name: Fiscal
+    description: Fiscal books and exchange rates
+  - name: Payments
+    description: Payments and provider webhooks
+  - name: Sellers
+    description: Sellers and commissions
+  - name: Reports
+    description: Accounting and inventory reports
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ---------------------------------------------------------------------------
+  # Auth
+  # ---------------------------------------------------------------------------
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user and tenant
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User and tenant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already registered
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and obtain tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh an access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: New token pair
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------------------
+  # Tenants
+  # ---------------------------------------------------------------------------
+  /tenants:
+    get:
+      tags: [Tenants]
+      summary: List tenants for the current user
+      responses:
+        '200':
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tenant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Tenants]
+      summary: Create a new tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreate'
+      responses:
+        '201':
+          description: Tenant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------------------
+  # Customers
+  # ---------------------------------------------------------------------------
+  /customers:
+    get:
+      tags: [Customers]
+      summary: List customers
+      parameters:
+        - name: q
+          in: query
+          description: Search term (name, tax id, phone)
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Paginated list of customers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Customers]
+      summary: Create a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreate'
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /customers/{id}:
+    get:
+      tags: [Customers]
+      summary: Get a customer by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Customer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Customers]
+      summary: Update a customer
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreate'
+      responses:
+        '200':
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------------------
+  # Products
+  # ---------------------------------------------------------------------------
+  /products:
+    get:
+      tags: [Products]
+      summary: List products
+      parameters:
+        - name: q
+          in: query
+          description: Search term (name, SKU)
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Paginated list of products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Products]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------------------
+  # Invoices
+  # ---------------------------------------------------------------------------
+  /invoices:
+    get:
+      tags: [Invoices]
+      summary: List invoices
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, emitted, paid, void]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Invoices]
+      summary: Create a draft invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceCreate'
+      responses:
+        '201':
+          description: Draft invoice created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /invoices/emit:
+    post:
+      tags: [Invoices]
+      summary: Emit (finalize) an invoice, assigning a fiscal number
+      description: |
+        Authoritative write. Assigns the next invoice number from the
+        fiscal sequence and marks the invoice as `emitted`. While offline
+        the client marks `pending_emission` locally and reconciles on
+        reconnect.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invoiceId]
+              properties:
+                invoiceId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Invoice emitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Invoice already emitted or sequence exhausted
+
+  # ---------------------------------------------------------------------------
+  # Fiscal
+  # ---------------------------------------------------------------------------
+  /fiscal/books:
+    get:
+      tags: [Fiscal]
+      summary: List fiscal books (sales / purchases)
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [sales, purchases]
+        - name: period
+          in: query
+          description: YYYY-MM
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fiscal books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FiscalBook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /fiscal/exchange-rates:
+    get:
+      tags: [Fiscal]
+      summary: List exchange rates (BCV / parallel)
+      parameters:
+        - name: currency
+          in: query
+          schema:
+            type: string
+            default: USD
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Exchange rates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExchangeRate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------------------
+  # Payments
+  # ---------------------------------------------------------------------------
+  /payments:
+    post:
+      tags: [Payments]
+      summary: Register a payment against an invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreate'
+      responses:
+        '201':
+          description: Payment registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /webhooks/payments/{provider}:
+    post:
+      tags: [Payments]
+      summary: Payment provider webhook callback
+      security: []
+      description: |
+        Receives async payment notifications from integrations
+        (Cashea, Spidi, WayuPay, Biopago). Signature verification is
+        provider-specific.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [cashea, spidi, wayupay, biopago]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Provider-specific webhook payload
+      responses:
+        '200':
+          description: Webhook acknowledged
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------------------
+  # Sellers
+  # ---------------------------------------------------------------------------
+  /sellers:
+    get:
+      tags: [Sellers]
+      summary: List sellers
+      responses:
+        '200':
+          description: List of sellers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Seller'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Sellers]
+      summary: Create a seller
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerCreate'
+      responses:
+        '201':
+          description: Seller created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seller'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sellers/commissions/mark-paid:
+    post:
+      tags: [Sellers]
+      summary: Mark selected commissions as paid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [commissionIds]
+              properties:
+                commissionIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Commissions marked as paid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ---------------------------------------------------------------------------
+  # Reports
+  # ---------------------------------------------------------------------------
+  /reports/sales-book:
+    get:
+      tags: [Reports]
+      summary: Sales book report (fiscal)
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: YYYY-MM
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sales book report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesBookReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /reports/purchases-book:
+    get:
+      tags: [Reports]
+      summary: Purchases book report (fiscal)
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: YYYY-MM
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Purchases book report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchasesBookReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /reports/inventory:
+    get:
+      tags: [Reports]
+      summary: Inventory valuation report
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Inventory report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT bearer token obtained from /auth/login or /auth/refresh.
+        The token encodes the `tenant_id` used to scope all queries
+        via PostgreSQL Row-Level Security.
+
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated but not allowed to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: unauthorized
+        message:
+          type: string
+          example: Missing or invalid authentication token
+
+    # --- Auth ---------------------------------------------------------------
+    RegisterRequest:
+      type: object
+      required: [email, password, tenantName]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        tenantName:
+          type: string
+        fullName:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tenantId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+
+    # --- Tenant -------------------------------------------------------------
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        taxId:
+          type: string
+        currency:
+          type: string
+          default: VES
+        createdAt:
+          type: string
+          format: date-time
+
+    TenantCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        taxId:
+          type: string
+        currency:
+          type: string
+          default: VES
+
+    # --- Customer -----------------------------------------------------------
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        taxId:
+          type: string
+          description: RIF / VAT id
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CustomerCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        taxId:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+
+    CustomerList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    # --- Product ------------------------------------------------------------
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+          default: VES
+        stock:
+          type: number
+          format: double
+          description: Derived from append-only stock_movements
+        taxRate:
+          type: number
+          format: double
+          description: IVA rate (e.g. 16)
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+          default: VES
+        taxRate:
+          type: number
+          format: double
+
+    ProductList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    # --- Invoice ------------------------------------------------------------
+    InvoiceItem:
+      type: object
+      required: [productId, quantity, unitPrice]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: number
+          format: double
+        unitPrice:
+          type: number
+          format: double
+        taxRate:
+          type: number
+          format: double
+        discount:
+          type: number
+          format: double
+          default: 0
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        number:
+          type: string
+          description: Fiscal number, assigned on emit
+        customerId:
+          type: string
+          format: uuid
+        sellerId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [draft, emitted, paid, void]
+        currency:
+          type: string
+        subtotal:
+          type: number
+          format: double
+        taxTotal:
+          type: number
+          format: double
+        total:
+          type: number
+          format: double
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+        emittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    InvoiceCreate:
+      type: object
+      required: [customerId, currency, items]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        sellerId:
+          type: string
+          format: uuid
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+
+    # --- Fiscal -------------------------------------------------------------
+    FiscalBook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [sales, purchases]
+        period:
+          type: string
+          description: YYYY-MM
+        entries:
+          type: integer
+        total:
+          type: number
+          format: double
+
+    ExchangeRate:
+      type: object
+      properties:
+        currency:
+          type: string
+        rate:
+          type: number
+          format: double
+        source:
+          type: string
+          enum: [bcv, parallel]
+        date:
+          type: string
+          format: date
+
+    # --- Payment ------------------------------------------------------------
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        method:
+          type: string
+          enum: [cash, transfer, card, cashea, spidi, wayupay, biopago]
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, rejected]
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentCreate:
+      type: object
+      required: [invoiceId, amount, currency, method]
+      properties:
+        invoiceId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        method:
+          type: string
+          enum: [cash, transfer, card, cashea, spidi, wayupay, biopago]
+        reference:
+          type: string
+
+    # --- Seller -------------------------------------------------------------
+    Seller:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        commissionRate:
+          type: number
+          format: double
+        active:
+          type: boolean
+
+    SellerCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        commissionRate:
+          type: number
+          format: double
+
+    # --- Reports ------------------------------------------------------------
+    SalesBookReport:
+      type: object
+      properties:
+        period:
+          type: string
+        totalInvoiced:
+          type: number
+          format: double
+        totalTax:
+          type: number
+          format: double
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              invoiceNumber:
+                type: string
+              customerTaxId:
+                type: string
+              date:
+                type: string
+                format: date
+              total:
+                type: number
+                format: double
+              tax:
+                type: number
+                format: double
+
+    PurchasesBookReport:
+      type: object
+      properties:
+        period:
+          type: string
+        totalPurchased:
+          type: number
+          format: double
+        totalTax:
+          type: number
+          format: double
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              supplierTaxId:
+                type: string
+              date:
+                type: string
+                format: date
+              total:
+                type: number
+                format: double
+              tax:
+                type: number
+                format: double
+
+    InventoryReport:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        totalValue:
+          type: number
+          format: double
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+              sku:
+                type: string
+              name:
+                type: string
+              quantity:
+                type: number
+                format: double
+              unitCost:
+                type: number
+                format: double
+              value:
+                type: number
+                format: double

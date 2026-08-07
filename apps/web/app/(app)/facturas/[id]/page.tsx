@@ -25,11 +25,11 @@ export default function FacturaDetallePage() {
       .then((inv) => {
         setInvoice(inv);
         if (inv.customer_id) {
-          api.customers.get(inv.customer_id).then(setCustomer).catch(() => {});
+          api.customers.get(inv.customer_id).then(setCustomer).catch((err) => console.error('operation failed:', err));
         }
         return inv;
       })
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, [id]);
 

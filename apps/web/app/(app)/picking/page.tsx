@@ -24,10 +24,10 @@ export default function PickingPage() {
 
   useEffect(() => {
     Promise.all([
-      api.picking.list().catch(() => [] as PickingList[]),
-      api.warehouses.list().catch(() => [] as Warehouse[]),
-      api.delivery.listRoutes().catch(() => [] as DeliveryRoute[]),
-      api.products.list().catch(() => [] as Product[]),
+      api.picking.list().catch((err) => { console.error('operation failed:', err); return [] as PickingList[]; }),
+      api.warehouses.list().catch((err) => { console.error('operation failed:', err); return [] as Warehouse[]; }),
+      api.delivery.listRoutes().catch((err) => { console.error('operation failed:', err); return [] as DeliveryRoute[]; }),
+      api.products.list().catch((err) => { console.error('operation failed:', err); return [] as Product[]; }),
     ]).then(([l, wh, r, prod]) => {
       setLists(l); setWarehouses(wh); setRoutes(r); setProducts(prod);
       setLoading(false);

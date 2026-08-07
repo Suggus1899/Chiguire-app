@@ -1,6 +1,6 @@
 packages:
   - 'apps/web'
-  - 'packages/*'
 
 allowBuilds:
-  - '@journeyapps/wa-sqlite'
+  '0': '@journeyapps/wa-sqlite'
+  '@journeyapps/wa-sqlite': set this to true or false

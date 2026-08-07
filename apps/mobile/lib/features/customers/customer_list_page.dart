@@ -47,9 +47,9 @@ class _CustomerListPageState extends ConsumerState<CustomerListPage> {
                         final c = state.customers[i];
                         return ListTile(
                           leading: const CircleAvatar(child: Icon(Icons.person)),
-                          title: Text(c['name']?.toString() ?? 'Sin nombre'),
-                          subtitle: Text(c['tax_id']?.toString() ?? c['email']?.toString() ?? ''),
-                          trailing: Text(c['phone']?.toString() ?? ''),
+                          title: Text(c.name.isEmpty ? 'Sin nombre' : c.name),
+                          subtitle: Text(c.taxId ?? c.email ?? ''),
+                          trailing: Text(c.phone ?? ''),
                         );
                       },
                     ),

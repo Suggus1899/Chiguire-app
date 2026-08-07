@@ -19,6 +19,6 @@ services:
       POWERSYNC_CONFIG_PATH: /config/config.yaml
       # Connects to host Postgres from inside the container
       POSTGRES_URI: postgresql://postgres:1234@host.docker.internal:5432/chiguire
-      POWERSYNC_JWT_SECRET: change_me_same_as_api_env
+      POWERSYNC_JWT_SECRET: ${POWERSYNC_JWT_SECRET:-change_me_in_production}
     extra_hosts:
       - "host.docker.internal:host-gateway"

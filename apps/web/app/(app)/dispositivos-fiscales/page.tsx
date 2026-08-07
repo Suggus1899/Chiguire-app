@@ -23,8 +23,8 @@ export default function DispositivosFiscalesPage() {
 
   useEffect(() => {
     Promise.all([
-      api.fiscalDevices.list().catch(() => [] as FiscalDevice[]),
-      api.branches.list().catch(() => [] as Branch[]),
+      api.fiscalDevices.list().catch((err) => { console.error('operation failed:', err); return [] as FiscalDevice[]; }),
+      api.branches.list().catch((err) => { console.error('operation failed:', err); return [] as Branch[]; }),
     ]).then(([devs, brs]) => {
       setDevices(devs);
       setBranches(brs);
@@ -35,8 +35,8 @@ export default function DispositivosFiscalesPage() {
   useEffect(() => {
     if (!selectedDevice) return;
     Promise.all([
-      api.fiscalDevices.listSequences(selectedDevice).catch(() => [] as DocumentSequence[]),
-      api.fiscalDevices.listContingency(selectedDevice).catch(() => [] as ContingencyBook[]),
+      api.fiscalDevices.listSequences(selectedDevice).catch((err) => { console.error('operation failed:', err); return [] as DocumentSequence[]; }),
+      api.fiscalDevices.listContingency(selectedDevice).catch((err) => { console.error('operation failed:', err); return [] as ContingencyBook[]; }),
     ]).then(([seqs, conts]) => {
       setSequences(seqs);
       setContingencies(conts);

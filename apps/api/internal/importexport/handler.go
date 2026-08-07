@@ -1,6 +1,7 @@
 package importexport
 
 import (
+	"log"
 	"encoding/csv"
 	"encoding/json"
 	"io"
@@ -87,7 +88,7 @@ func HandleImportCustomers(pool *pgxpool.Pool) http.HandlerFunc {
 
 		var inserted int
 		tid := mw.TenantIDFrom(r.Context())
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			for _, c := range rows {
 				if c.Name == "" {
 					continue
@@ -167,7 +168,7 @@ func HandleImportProducts(pool *pgxpool.Pool) http.HandlerFunc {
 
 		var inserted int
 		tid := mw.TenantIDFrom(r.Context())
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			for _, p := range rows {
 				if p.Name == "" {
 					continue
@@ -198,10 +199,22 @@ func HandleExportInvoices(pool *pgxpool.Pool) http.HandlerFunc {
 		w.Header().Set("Content-Disposition", "attachment; filename=invoices.csv")
 		cw := csv.NewWriter(w)
 		cw.Write([]string{"id", "number", "customer_id", "status", "currency", "subtotal", "tax_total", "total", "created_at"})
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 1000
+		}
+		if perPage > 5000 {
+			perPage = 5000
+		}
+		offset := (page - 1) * perPage
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, number, customer_id, status, currency, subtotal, tax_total, total, created_at
-				 FROM invoices ORDER BY created_at DESC LIMIT 1000`)
+				 FROM invoices ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -223,6 +236,7 @@ func HandleExportInvoices(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -236,10 +250,22 @@ func HandleExportCustomers(pool *pgxpool.Pool) http.HandlerFunc {
 		w.Header().Set("Content-Disposition", "attachment; filename=customers.csv")
 		cw := csv.NewWriter(w)
 		cw.Write([]string{"id", "name", "tax_id", "email", "phone", "address", "currency", "created_at"})
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 1000
+		}
+		if perPage > 5000 {
+			perPage = 5000
+		}
+		offset := (page - 1) * perPage
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, name, tax_id, email, phone, address, currency, created_at
-				 FROM customers ORDER BY created_at DESC LIMIT 1000`)
+				 FROM customers ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -254,6 +280,7 @@ func HandleExportCustomers(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

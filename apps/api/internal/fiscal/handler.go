@@ -1,13 +1,17 @@
 package fiscal
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	mw "github.com/Suggus1899/chiguire/api/internal/middleware"
 )
 
 type TaxCategory struct {
@@ -19,10 +23,23 @@ type TaxCategory struct {
 
 func HandleListTaxCategories(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var items []TaxCategory
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT id, name, iva_rate, description FROM tax_categories ORDER BY iva_rate`,
+				`SELECT id, name, iva_rate, description FROM tax_categories ORDER BY iva_rate LIMIT $1 OFFSET $2`,
+				perPage, offset,
 			)
 			if err != nil {
 				return err
@@ -38,6 +55,7 @@ func HandleListTaxCategories(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -65,7 +83,7 @@ func HandleCreateTaxCategory(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		var c TaxCategory
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`INSERT INTO tax_categories (name, iva_rate, description)
 				 VALUES ($1,$2,$3) RETURNING id, name, iva_rate, description`,
@@ -73,6 +91,7 @@ func HandleCreateTaxCategory(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&c.ID, &c.Name, &c.IVARate, &c.Description)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -117,7 +136,7 @@ func HandleCreateWithholding(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		var wh Withholding
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`INSERT INTO tax_withholdings (invoice_id, vendor_id, customer_id, type, base, rate, amount, document_number, period)
 				 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
@@ -126,6 +145,7 @@ func HandleCreateWithholding(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&wh.ID, &wh.InvoiceID, &wh.VendorID, &wh.CustomerID, &wh.Type, &wh.Base, &wh.Rate, &wh.Amount, &wh.DocumentNumber, &wh.Period)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -138,6 +158,18 @@ func HandleCreateWithholding(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleListWithholdings(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		period := r.URL.Query().Get("period")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		q := `SELECT id, invoice_id, vendor_id, customer_id, type, base, rate, amount, document_number, period
 		      FROM tax_withholdings`
 		args := []interface{}{}
@@ -145,9 +177,10 @@ func HandleListWithholdings(pool *pgxpool.Pool) http.HandlerFunc {
 			q += ` WHERE period = $1`
 			args = append(args, period)
 		}
-		q += ` ORDER BY period DESC, created_at DESC`
+		q += ` ORDER BY period DESC, created_at DESC LIMIT $` + strconv.Itoa(len(args)+1) + ` OFFSET $` + strconv.Itoa(len(args)+2)
+		args = append(args, perPage, offset)
 		var items []Withholding
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(), q, args...)
 			if err != nil {
 				return err
@@ -163,6 +196,7 @@ func HandleListWithholdings(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -182,10 +216,23 @@ type FiscalPeriod struct {
 
 func HandleListFiscalPeriods(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var items []FiscalPeriod
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT period, is_closed, closed_at FROM fiscal_periods ORDER BY period DESC`,
+				`SELECT period, is_closed, closed_at FROM fiscal_periods ORDER BY period DESC LIMIT $1 OFFSET $2`,
+				perPage, offset,
 			)
 			if err != nil {
 				return err
@@ -201,6 +248,7 @@ func HandleListFiscalPeriods(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -220,7 +268,7 @@ func HandleClosePeriod(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		var p FiscalPeriod
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`UPDATE fiscal_periods SET is_closed = true, closed_at = NOW()
 				 WHERE period = $1 AND is_closed = false
@@ -259,7 +307,7 @@ func HandleGenerateFiscalBook(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		var book FiscalBook
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			// Build entries from invoices for the period
 			rows, err := tx.Query(r.Context(),
 				`SELECT json_agg(row_to_json(t)) FROM (
@@ -288,6 +336,7 @@ func HandleGenerateFiscalBook(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&book.ID, &book.Type, &book.Period, &book.EntriesJSON)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -305,7 +354,7 @@ func HandleGetFiscalBook(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		var book FiscalBook
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`SELECT id, type, period, entries_json FROM fiscal_books WHERE id = $1`,
 				id,
@@ -373,6 +422,7 @@ func HandleSetExchangeRate(pool *pgxpool.Pool) http.HandlerFunc {
 			body.Currency, body.RateToVES, body.Source,
 		).Scan(&rate.Currency, &rate.RateToVES, &rate.Source, &rate.EffectiveAt)
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -385,15 +435,29 @@ func HandleSetExchangeRate(pool *pgxpool.Pool) http.HandlerFunc {
 func HandleListExchangeRates(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		currency := r.URL.Query().Get("currency")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		q := `SELECT currency, rate_to_ves, source, effective_at FROM exchange_rates`
 		args := []interface{}{}
 		if currency != "" {
 			q += ` WHERE currency = $1`
 			args = append(args, currency)
 		}
-		q += ` ORDER BY effective_at DESC LIMIT 100`
+		q += ` ORDER BY effective_at DESC LIMIT $` + strconv.Itoa(len(args)+1) + ` OFFSET $` + strconv.Itoa(len(args)+2)
+		args = append(args, perPage, offset)
 		rows, err := pool.Query(r.Context(), q, args...)
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

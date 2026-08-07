@@ -20,8 +20,8 @@ export default function RutasPage() {
 
   useEffect(() => {
     Promise.all([
-      api.delivery.listRoutes().catch(() => [] as DeliveryRoute[]),
-      api.customers.list().catch(() => [] as Customer[]),
+      api.delivery.listRoutes().catch((err) => { console.error('operation failed:', err); return [] as DeliveryRoute[]; }),
+      api.customers.list().catch((err) => { console.error('operation failed:', err); return [] as Customer[]; }),
     ]).then(([rt, cust]) => {
       setRoutes(rt);
       setCustomers(cust);

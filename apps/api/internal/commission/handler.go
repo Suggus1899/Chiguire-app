@@ -1,8 +1,10 @@
 package commission
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -26,12 +28,24 @@ func HandleListCommissions(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vendorID := r.URL.Query().Get("vendor_user_id")
 		period := r.URL.Query().Get("period")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var cs []Commission
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, tenant_id, vendor_user_id, invoice_id, category_id, rate_pct, base_amount, commission_amount, period
 				 FROM sales_commissions WHERE ($1 = '' OR vendor_user_id = $1) AND ($2 = '' OR period = $2)
-				 ORDER BY period DESC`, vendorID, period)
+				 ORDER BY period DESC LIMIT $3 OFFSET $4`, vendorID, period, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -47,6 +61,7 @@ func HandleListCommissions(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -73,7 +88,7 @@ func HandleCalculateCommissions(pool *pgxpool.Pool) http.HandlerFunc {
 		}
 		tid := mw.TenantIDFrom(r.Context())
 		var created []Commission
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT i.id, i.vendor_user_id, i.subtotal, COALESCE(vc.rate_pct, 0), COALESCE(vc.category_id, NULL)
 				 FROM invoices i

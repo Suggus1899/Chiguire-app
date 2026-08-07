@@ -33,7 +33,13 @@ class ProductListNotifier extends Notifier<ProductListState> {
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final local = await db.getAll('SELECT * FROM products ORDER BY name');
+      final tenantId = authApi.tenantId;
+      final local = tenantId != null
+          ? await db.getAll(
+              'SELECT * FROM products WHERE tenant_id = ? ORDER BY name',
+              [tenantId],
+            )
+          : await db.getAll('SELECT * FROM products ORDER BY name');
       final rows = local.map((r) => Map<String, dynamic>.from(r)).toList();
       state = ProductListState(products: rows);
       try {

@@ -15,7 +15,7 @@ export default function ProveedoresPage() {
   useEffect(() => {
     api.vendors.list()
       .then(setVendors)
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, []);
 

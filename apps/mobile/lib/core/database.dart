@@ -1,4 +1,34 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:powersync/powersync.dart';
+import 'api.dart';
+
+/// PowerSync service endpoint. Configure via the POWERSYNC_URL dart-define.
+const _powerSyncEndpoint = String.fromEnvironment(
+  'POWERSYNC_URL',
+  defaultValue: 'http://10.0.2.2:8080',
+);
+
+/// Backend connector that bridges the local PowerSync database with the
+/// Chiguire API. It fetches sync credentials from the API and (for now)
+/// treats local-change uploads as a no-op — reads are the priority.
+class _ChiguireConnector extends PowerSyncBackendConnector {
+  @override
+  Future<PowerSyncCredentials?> fetchCredentials() async {
+    final token = await powerSyncApi.getToken();
+    return PowerSyncCredentials(
+      endpoint: _powerSyncEndpoint,
+      token: token,
+    );
+  }
+
+  @override
+  Future<void> uploadData(PowerSyncDatabase database) async {
+    // No-op for now: reads are the priority. Local writes will be synced in a
+    // later phase once the upload endpoint is implemented.
+  }
+}
 
 const schema = Schema([
   Table('test_items', [
@@ -250,4 +280,24 @@ Future<void> openDatabase() async {
     path: 'chiguire.db',
   );
   await db.initialize();
+}
+
+/// Connect the local PowerSync database to the PowerSync service so that
+/// remote changes are replicated into SQLite. Call this after [openDatabase]
+/// during app initialization.
+///
+/// The connection runs as a long-lived background sync loop and is
+/// auto-reopened by PowerSync on failure, so this does not block app startup.
+/// Any immediate setup errors are caught and logged so the app keeps working
+/// offline against the local database.
+Future<void> connect() async {
+  try {
+    unawaited(
+      db.connect(connector: _ChiguireConnector()).catchError((Object e) {
+        debugPrint('PowerSync connect failed: $e');
+      }),
+    );
+  } catch (e) {
+    debugPrint('PowerSync connect setup failed: $e');
+  }
 }

@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"log"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -53,6 +54,7 @@ func HandleCreateBranch(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&b.ID, &b.Name, &b.Address, &b.Phone, &b.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -83,6 +85,7 @@ func HandleListBranches(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -152,6 +155,7 @@ func HandleCreateWarehouse(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&wh.ID, &wh.BranchID, &wh.Name, &wh.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -182,6 +186,7 @@ func HandleListWarehouses(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -261,6 +266,7 @@ func HandleCreateMovement(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&m.ID, &m.WarehouseID, &m.ProductID, &m.Type, &m.Qty, &m.ReferenceType, &m.ReferenceID, &m.Notes, &m.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -296,6 +302,7 @@ func HandleListMovements(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -341,6 +348,7 @@ func HandleGetStock(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}

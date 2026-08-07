@@ -106,9 +106,11 @@ func (s *Service) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.RefreshToken), 4) // low cost for lookup
-	_ = hash
-	// ponytail: using raw token as lookup key (hashed at insert); full rotation in phase 1
+	_, err := bcrypt.GenerateFromPassword([]byte(body.RefreshToken), 4) // low cost for lookup
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
 	var userID, tenantID, role string
 	err = s.pool.QueryRow(r.Context(),
 		`SELECT user_id, tenant_id, 'member' FROM refresh_tokens
@@ -155,7 +157,11 @@ func (s *Service) issueTokenPair(ctx context.Context, userID, tenantID, role str
 	}
 
 	// Refresh token: opaque random string stored hashed
-	rawRefresh := generateToken()
+	var rawRefresh string
+	rawRefresh, err = generateToken()
+	if err != nil {
+		return
+	}
 	_, err = s.pool.Exec(ctx,
 		`INSERT INTO refresh_tokens (user_id, tenant_id, token_hash, expires_at)
 		 VALUES ($1, $2, crypt($3, gen_salt('bf', 4)), NOW() + INTERVAL '7 days')`,

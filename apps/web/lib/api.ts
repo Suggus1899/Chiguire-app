@@ -6,19 +6,88 @@ type TokenStore = {
   tenantId?: string;
 };
 
-// ponytail: sessionStorage for dev; swap to httpOnly cookie in prod
+// --- Cookie utilities ---
+function setCookie(name: string, value: string, days: number) {
+  if (typeof document === 'undefined') return;
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Strict`;
+}
+
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Strict`;
+}
+
+// --- Token store backed by cookies ---
+const ACCESS_COOKIE = 'chiguire_access';
+const REFRESH_COOKIE = 'chiguire_refresh';
+const TENANT_COOKIE = 'chiguire_tenant';
+
 function getTokens(): TokenStore | null {
   if (typeof window === 'undefined') return null;
-  const raw = sessionStorage.getItem('chiguire_tokens');
-  return raw ? JSON.parse(raw) : null;
+  const access = getCookie(ACCESS_COOKIE);
+  const refresh = getCookie(REFRESH_COOKIE);
+  if (!access || !refresh) return null;
+  const tenantId = getCookie(TENANT_COOKIE) || undefined;
+  return { access, refresh, tenantId };
 }
 
 function setTokens(t: TokenStore) {
-  sessionStorage.setItem('chiguire_tokens', JSON.stringify(t));
+  setCookie(ACCESS_COOKIE, t.access, 1);
+  setCookie(REFRESH_COOKIE, t.refresh, 7);
+  if (t.tenantId) setCookie(TENANT_COOKIE, t.tenantId, 7);
 }
 
 function clearTokens() {
-  sessionStorage.removeItem('chiguire_tokens');
+  deleteCookie(ACCESS_COOKIE);
+  deleteCookie(REFRESH_COOKIE);
+  deleteCookie(TENANT_COOKIE);
+}
+
+// --- Token refresh mutex ---
+let refreshPromise: Promise<boolean> | null = null;
+
+async function doRefresh(): Promise<boolean> {
+  const tokens = getTokens();
+  if (!tokens?.refresh) return false;
+  try {
+    const res = await fetch(`${BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: tokens.refresh }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json() as { access_token: string; refresh_token?: string };
+    setTokens({
+      access: data.access_token,
+      refresh: data.refresh_token ?? tokens.refresh,
+      tenantId: tokens.tenantId,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function refreshToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = doRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+function redirectToLogin() {
+  clearTokens();
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -30,6 +99,32 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (tokens?.access) headers['Authorization'] = `Bearer ${tokens.access}`;
 
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
+
+  // On 401, attempt a single token refresh then retry once
+  const isRetry = typeof init.headers === 'object' && init.headers !== null && !Array.isArray(init.headers) && 'x-retry' in init.headers;
+  if (res.status === 401 && !isRetry) {
+    const ok = await refreshToken();
+    if (ok) {
+      const retryHeaders: Record<string, string> = {
+        ...headers,
+        'x-retry': '1',
+      };
+      const newTokens = getTokens();
+      if (newTokens?.access) retryHeaders['Authorization'] = `Bearer ${newTokens.access}`;
+      const retryRes = await fetch(`${BASE}${path}`, { ...init, headers: retryHeaders });
+      if (retryRes.ok) {
+        if (retryRes.status === 204) return undefined as T;
+        return retryRes.json();
+      }
+      redirectToLogin();
+      const text = await retryRes.text();
+      throw new Error(`${retryRes.status}: ${text}`);
+    }
+    redirectToLogin();
+    const text = await res.text();
+    throw new Error(`${res.status}: ${text}`);
+  }
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`${res.status}: ${text}`);

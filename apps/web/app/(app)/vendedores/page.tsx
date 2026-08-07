@@ -20,7 +20,7 @@ export default function VendedoresPage() {
   useEffect(() => {
     api.sellers.list()
       .then(setSellers)
-      .catch(() => {})
+      .catch((err) => console.error('operation failed:', err))
       .finally(() => setLoading(false));
   }, []);
 

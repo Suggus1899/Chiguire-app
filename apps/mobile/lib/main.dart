@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/api.dart';
 import 'core/database.dart';
 import 'router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initApi();
   await openDatabase();
+  await connect();
   runApp(const ProviderScope(child: ChiguireApp()));
 }
 

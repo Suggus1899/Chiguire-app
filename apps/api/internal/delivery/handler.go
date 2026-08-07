@@ -1,8 +1,10 @@
 package delivery
 
 import (
+	"log"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -60,7 +62,7 @@ func HandleCreateRoute(pool *pgxpool.Pool) http.HandlerFunc {
 			date = time.Now()
 		}
 		var rt Route
-		err = withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err = mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`INSERT INTO delivery_routes (tenant_id, driver_id, date, status)
 				 VALUES ($1,$2,$3,'pending')
@@ -80,11 +82,23 @@ func HandleCreateRoute(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListRoutes(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var routes []Route
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
 				`SELECT id, tenant_id, driver_id, date, status, created_at
-				 FROM delivery_routes ORDER BY date DESC`)
+				 FROM delivery_routes ORDER BY date DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -99,6 +113,7 @@ func HandleListRoutes(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -115,7 +130,7 @@ func HandleGetRoute(pool *pgxpool.Pool) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		var rt Route
 		var stops []Stop
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			if err := tx.QueryRow(r.Context(),
 				`SELECT id, tenant_id, driver_id, date, status, created_at
 				 FROM delivery_routes WHERE id=$1`, id,
@@ -169,7 +184,7 @@ func HandleAddStop(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		var s Stop
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			return tx.QueryRow(r.Context(),
 				`INSERT INTO delivery_stops (tenant_id, route_id, customer_id, invoice_id, stop_order, status, notes)
 				 VALUES ($1,$2,$3,$4,$5,'pending',$6)
@@ -204,7 +219,7 @@ func HandleUpdateStopStatus(pool *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, "invalid status", http.StatusBadRequest)
 			return
 		}
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			if body.Status == "delivered" {
 				_, err := tx.Exec(r.Context(),
 					`UPDATE delivery_stops SET status=$2, delivered_at=NOW() WHERE id=$1`,
@@ -237,7 +252,7 @@ func HandleRecordSignature(pool *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, "signature_data required", http.StatusBadRequest)
 			return
 		}
-		err := withTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
+		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			_, err := tx.Exec(r.Context(),
 				`UPDATE delivery_stops SET signature_data=$2, status='delivered', delivered_at=NOW() WHERE id=$1`,
 				stopID, body.SignatureData)

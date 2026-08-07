@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api.dart';
 import '../core/database.dart';
+import '../models/customer.dart';
 
 class CustomerListState {
-  final List<Map<String, dynamic>> customers;
+  final List<Customer> customers;
   final bool isLoading;
   final String? error;
 
@@ -14,7 +15,7 @@ class CustomerListState {
   });
 
   CustomerListState copyWith({
-    List<Map<String, dynamic>>? customers,
+    List<Customer>? customers,
     bool? isLoading,
     String? error,
   }) {
@@ -33,12 +34,22 @@ class CustomerListNotifier extends Notifier<CustomerListState> {
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final local = await db.getAll('SELECT * FROM customers ORDER BY name');
-      final rows = local.map((r) => Map<String, dynamic>.from(r)).toList();
+      final tenantId = authApi.tenantId;
+      final local = tenantId != null
+          ? await db.getAll(
+              'SELECT * FROM customers WHERE tenant_id = ? ORDER BY name',
+              [tenantId],
+            )
+          : await db.getAll('SELECT * FROM customers ORDER BY name');
+      final rows = local
+          .map((r) => Customer.fromJson(Map<String, dynamic>.from(r)))
+          .toList();
       state = CustomerListState(customers: rows);
       try {
         final remote = await customersApi.list();
-        state = CustomerListState(customers: remote);
+        state = CustomerListState(
+          customers: remote.map(Customer.fromJson).toList(),
+        );
       } catch (_) {}
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

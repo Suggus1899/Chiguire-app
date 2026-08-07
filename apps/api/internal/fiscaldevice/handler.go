@@ -1,9 +1,11 @@
 package fiscaldevice
 
 import (
+	"log"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -88,6 +90,7 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&fd.ID, &fd.BranchID, &fd.Name, &fd.DeviceType, &fd.Model, &fd.Serial, &fd.IsActive, &fd.CreatedAt, &fd.UpdatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -100,10 +103,22 @@ func HandleCreate(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var fds []FiscalDevice
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+fdCols+` FROM fiscal_devices ORDER BY created_at DESC`)
+				`SELECT `+fdCols+` FROM fiscal_devices ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -118,6 +133,7 @@ func HandleList(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -241,6 +257,7 @@ func HandleCreateSequence(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&ds.ID, &ds.FiscalDeviceID, &ds.DocType, &ds.Prefix, &ds.Suffix, &ds.LastSeq, &ds.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -253,10 +270,22 @@ func HandleCreateSequence(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListSequences(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var dss []DocumentSequence
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+dsCols+` FROM document_sequences ORDER BY created_at DESC`)
+				`SELECT `+dsCols+` FROM document_sequences ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -271,6 +300,7 @@ func HandleListSequences(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -316,6 +346,7 @@ func HandleCreateContingency(pool *pgxpool.Pool) http.HandlerFunc {
 			).Scan(&cb.ID, &cb.BranchID, &cb.DocType, &cb.Prefix, &cb.StartSeq, &cb.EndSeq, &cb.CurrentSeq, &cb.IsActive, &cb.CreatedAt)
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
@@ -328,10 +359,22 @@ func HandleCreateContingency(pool *pgxpool.Pool) http.HandlerFunc {
 
 func HandleListContingency(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+		if perPage < 1 {
+			perPage = 50
+		}
+		if perPage > 200 {
+			perPage = 200
+		}
+		offset := (page - 1) * perPage
 		var cbs []Contingency
 		err := mw.WithTenantTx(r.Context(), pool, func(tx pgx.Tx) error {
 			rows, err := tx.Query(r.Context(),
-				`SELECT `+cbCols+` FROM contingency_books ORDER BY created_at DESC`)
+				`SELECT `+cbCols+` FROM contingency_books ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset)
 			if err != nil {
 				return err
 			}
@@ -346,6 +389,7 @@ func HandleListContingency(pool *pgxpool.Pool) http.HandlerFunc {
 			return rows.Err()
 		})
 		if err != nil {
+			log.Printf("db error: %v", err)
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
