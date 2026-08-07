@@ -1,30 +1,61 @@
-.PHONY: dev infra-up infra-down migrate migrate-create api-gen
+.PHONY: db-create db-drop db-wal migrate migrate-down migrate-create api-gen api-dev web-dev powersync-up powersync-down
 
-# Start local infra (Postgres + PowerSync)
-infra-up:
-	docker compose -f infra/docker/compose.yml up -d
+# ─── Local Postgres (no Docker) ─────────────────────────────────────────
+DB_URL ?= postgresql://postgres:1234@localhost:5432/chiguire
 
-infra-down:
-	docker compose -f infra/docker/compose.yml down
+db-create:
+	psql -U postgres -c "CREATE DATABASE chiguire;" 2>/dev/null || echo "DB already exists"
 
-# Run DB migrations
+db-drop:
+	psql -U postgres -c "DROP DATABASE IF EXISTS chiguire;"
+
+# Run once to enable logical replication (requires Postgres restart)
+db-wal:
+	psql -U postgres -c "ALTER SYSTEM SET wal_level = logical;"
+	psql -U postgres -c "ALTER SYSTEM SET max_replication_slots = 10;"
+	psql -U postgres -c "ALTER SYSTEM SET max_wal_senders = 10;"
+	@echo "Restart Postgres for changes to take effect."
+
+# ─── Migrations ──────────────────────────────────────────────────────────
 migrate:
-	cd apps/api && goose -dir ../../infra/migrations postgres "$(DATABASE_URL)" up
+	goose -dir infra/migrations postgres "$(DB_URL)" up
 
 migrate-down:
-	cd apps/api && goose -dir ../../infra/migrations postgres "$(DATABASE_URL)" down
+	goose -dir infra/migrations postgres "$(DB_URL)" down
+
+migrate-status:
+	goose -dir infra/migrations postgres "$(DB_URL)" status
 
 migrate-create:
-	cd apps/api && goose -dir ../../infra/migrations create $(name) sql
+	goose -dir infra/migrations create $(name) sql
 
-# Generate sqlc
+# ─── API ─────────────────────────────────────────────────────────────────
 api-gen:
 	cd apps/api && sqlc generate
 
-# Run API locally
 api-dev:
 	cd apps/api && go run ./cmd/server
 
-# Run web locally
+api-build:
+	cd apps/api && go build -o bin/server ./cmd/server
+
+# ─── Web ─────────────────────────────────────────────────────────────────
 web-dev:
 	pnpm --filter web dev
+
+web-build:
+	pnpm --filter web build
+
+# ─── PowerSync (only service that uses Docker) ───────────────────────────
+powersync-up:
+	docker compose -f infra/docker/compose.yml up -d
+
+powersync-down:
+	docker compose -f infra/docker/compose.yml down
+
+# ─── Flutter ─────────────────────────────────────────────────────────────
+mobile-analyze:
+	cd apps/mobile && flutter analyze
+
+mobile-test:
+	cd apps/mobile && flutter test

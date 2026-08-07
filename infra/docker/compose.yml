@@ -1,28 +1,13 @@
 name: chiguire-dev
 
-services:
-  postgres:
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: chiguire
-      POSTGRES_PASSWORD: chiguire_dev
-      POSTGRES_DB: chiguire
-    command: >
-      postgres
-        -c wal_level=logical
-        -c max_replication_slots=10
-        -c max_wal_senders=10
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chiguire"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+# Only PowerSync runs in Docker.
+# Postgres runs natively on localhost:5432 (your local install).
+#
+# IMPORTANT: your local Postgres must have wal_level=logical.
+# Run once: ALTER SYSTEM SET wal_level = logical; then restart Postgres.
+# Verify: SHOW wal_level;
 
+services:
   powersync:
     image: journeyapps/powersync-service:latest
     restart: unless-stopped
@@ -32,9 +17,8 @@ services:
       - ../powersync/config.yaml:/config/config.yaml:ro
     environment:
       POWERSYNC_CONFIG_PATH: /config/config.yaml
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-volumes:
-  postgres-data:
+      # Connects to host Postgres from inside the container
+      POSTGRES_URI: postgresql://postgres:1234@host.docker.internal:5432/chiguire
+      POWERSYNC_JWT_SECRET: change_me_same_as_api_env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
