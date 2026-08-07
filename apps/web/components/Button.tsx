@@ -1,4 +1,3 @@
-'use client';
 import { ButtonHTMLAttributes } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
