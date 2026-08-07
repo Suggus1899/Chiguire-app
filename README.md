@@ -1,70 +1,143 @@
-# Chiguire
+<div align="center">
 
-ERP offline-first multi-tenant para empresas venezolanas. Facturación, inventario, fiscal SENIAT, pagos locales (Cashea, Spidi, WayuPay, Biopago) y sincronización en la nube. Funciona sin internet; sincroniza cuando hay conexión.
+# 🦔 Chiguire
 
----
+### ERP offline-first multi-tenant para empresas venezolanas
 
-## Contenido
+Plataforma **ERP** diseñada para el contexto venezolano: facturación, inventario, fiscal SENIAT, pagos locales (Cashea, Spidi, WayuPay, Biopago) y sincronización en la nube. **Funciona sin internet**; sincroniza cuando hay conexión.
 
-- [¿Por qué Chiguire?](#por-qué-chiguire)
-- [Arquitectura](#arquitectura)
-- [Stack tecnológico](#stack-tecnológico)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Configuración local](#configuración-local)
-- [Comandos](#comandos)
-- [Fases de desarrollo](#fases-de-desarrollo)
-  - [Fase 0 — Fundación](#fase-0--fundación-completada)
-  - [Fase 1 — Facturación e inventario](#fase-1--facturación-e-inventario)
-  - [Fase 2 — Fiscal venezolano](#fase-2--fiscal-venezolano)
-  - [Fase 3 — Impresora fiscal (Desktop)](#fase-3--impresora-fiscal-desktop)
-  - [Fase 4 — Pagos](#fase-4--pagos)
-  - [Fase 5 — Compras, cotizaciones y operaciones](#fase-5--compras-cotizaciones-y-operaciones)
-  - [Fase 6 — Integraciones y SaaS](#fase-6--integraciones-y-saas)
-- [Modelo de datos](#modelo-de-datos)
-- [Multi-tenancy](#multi-tenancy)
-- [Sync offline-first](#sync-offline-first)
-- [Convenciones](#convenciones)
+</div>
 
----
+<br>
 
-## ¿Por qué Chiguire?
+<div align="center">
 
-Venezuela tiene necesidades ERP específicas que las soluciones internacionales no cubren bien:
+## 🛠️ Tech Stack
 
-- **Multi-moneda real**: USD como moneda funcional, VES con tasa BCV actualizada automáticamente.
-- **Compliance SENIAT**: IGTF 3%, IVA 16%, retenciones ISLR/IVA, libros de ventas/compras, impresoras fiscales homologadas.
-- **Pagos locales**: Cashea, Spidi, WayuPay, Biopago, además de transferencias y efectivo.
-- **Conectividad intermitente**: el negocio no puede detenerse cuando se va la luz o la fibra. Chiguire funciona completamente offline y sincroniza en cuanto hay conexión.
+</div>
 
----
+<table align="center">
+<tr>
+<th colspan="5" align="center" width="600"><sub><b>Frontend</b></sub></th>
+</tr>
+<tr>
+<td align="center" width="120">
+<a href="https://nextjs.org/" target="_blank"><img src="https://cdn.simpleicons.org/nextdotjs/000000" width="48" height="48" alt="Next.js" /></a>
+<br><sub><b><a href="https://nextjs.org/" target="_blank">Next.js 16</a></b></sub>
+<br><sub>App Router · PWA</sub>
+</td>
+<td align="center" width="120">
+<a href="https://react.dev/" target="_blank"><img src="https://cdn.simpleicons.org/react/61DAFB" width="48" height="48" alt="React" /></a>
+<br><sub><b><a href="https://react.dev/" target="_blank">React 19</a></b></sub>
+<br><sub>Server Components</sub>
+</td>
+<td align="center" width="120">
+<a href="https://www.typescriptlang.org/" target="_blank"><img src="https://cdn.simpleicons.org/typescript/3178C6" width="48" height="48" alt="TypeScript" /></a>
+<br><sub><b><a href="https://www.typescriptlang.org/" target="_blank">TypeScript 5</a></b></sub>
+<br><sub>Type-safe</sub>
+</td>
+<td align="center" width="120">
+<a href="https://tailwindcss.com/" target="_blank"><img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" width="48" height="48" alt="Tailwind CSS" /></a>
+<br><sub><b><a href="https://tailwindcss.com/" target="_blank">Tailwind v4</a></b></sub>
+<br><sub>Utility-first</sub>
+</td>
+<td align="center" width="120">
+<a href="https://flutter.dev/" target="_blank"><img src="https://cdn.simpleicons.org/flutter/02569B" width="48" height="48" alt="Flutter" /></a>
+<br><sub><b><a href="https://flutter.dev/" target="_blank">Flutter</a></b></sub>
+<br><sub>Android · iOS</sub>
+</td>
+</tr>
+<tr>
+<th colspan="5" align="center" width="600"><sub><b>Backend</b></sub></th>
+</tr>
+<tr>
+<td align="center" width="120">
+<a href="https://go.dev/" target="_blank"><img src="https://cdn.simpleicons.org/go/00ADD8" width="48" height="48" alt="Go" /></a>
+<br><sub><b><a href="https://go.dev/" target="_blank">Go 1.26</a></b></sub>
+<br><sub>Backend API</sub>
+</td>
+<td align="center" width="120">
+<a href="https://github.com/go-chi/chi" target="_blank"><img src="https://raw.githubusercontent.com/go-chi/docs/master/assets/chi.png" width="48" height="48" alt="go-chi" /></a>
+<br><sub><b><a href="https://github.com/go-chi/chi" target="_blank">go-chi v5</a></b></sub>
+<br><sub>HTTP router</sub>
+</td>
+<td align="center" width="120">
+<a href="https://www.postgresql.org/" target="_blank"><img src="https://cdn.simpleicons.org/postgresql/4169E1" width="48" height="48" alt="PostgreSQL" /></a>
+<br><sub><b><a href="https://www.postgresql.org/" target="_blank">PostgreSQL 16</a></b></sub>
+<br><sub>Primary DB · RLS</sub>
+</td>
+<td align="center" width="120">
+<a href="https://jwt.io/" target="_blank"><img src="https://cdn.simpleicons.org/jsonwebtokens/000000" width="48" height="48" alt="JWT" /></a>
+<br><sub><b><a href="https://jwt.io/" target="_blank">JWT</a></b></sub>
+<br><sub>HS256 · 15min access</sub>
+</td>
+<td align="center" width="120">
+<a href="https://github.com/pressly/goose" target="_blank"><img src="https://cdn.simpleicons.org/goose/00ADD8" width="48" height="48" alt="goose" /></a>
+<br><sub><b><a href="https://github.com/pressly/goose" target="_blank">goose</a></b></sub>
+<br><sub>Migrations</sub>
+</td>
+</tr>
+<tr>
+<th colspan="5" align="center" width="600"><sub><b>Sync · Desktop · Tooling</b></sub></th>
+</tr>
+<tr>
+<td align="center" width="120">
+<a href="https://www.powersync.com/" target="_blank"><img src="https://cdn.simpleicons.org/powersync/FF6B6B" width="48" height="48" alt="PowerSync" /></a>
+<br><sub><b><a href="https://www.powersync.com/" target="_blank">PowerSync</a></b></sub>
+<br><sub>Offline-first sync</sub>
+</td>
+<td align="center" width="120">
+<a href="https://tauri.app/" target="_blank"><img src="https://cdn.simpleicons.org/tauri/FFC131" width="48" height="48" alt="Tauri" /></a>
+<br><sub><b><a href="https://tauri.app/" target="_blank">Tauri 2</a></b></sub>
+<br><sub>Desktop · Rust</sub>
+</td>
+<td align="center" width="120">
+<a href="https://riverpod.dev/" target="_blank"><img src="https://cdn.simpleicons.org/riverpod/00ADD8" width="48" height="48" alt="Riverpod" /></a>
+<br><sub><b><a href="https://riverpod.dev/" target="_blank">Riverpod 3</a></b></sub>
+<br><sub>State (Flutter)</sub>
+</td>
+<td align="center" width="120">
+<a href="https://pnpm.io/" target="_blank"><img src="https://cdn.simpleicons.org/pnpm/F69220" width="48" height="48" alt="pnpm" /></a>
+<br><sub><b><a href="https://pnpm.io/" target="_blank">pnpm 11</a></b></sub>
+<br><sub>Workspaces</sub>
+</td>
+<td align="center" width="120">
+<a href="https://www.docker.com/" target="_blank"><img src="https://cdn.simpleicons.org/docker/2496ED" width="48" height="48" alt="Docker" /></a>
+<br><sub><b><a href="https://www.docker.com/" target="_blank">Docker</a></b></sub>
+<br><sub>PowerSync only</sub>
+</td>
+</tr>
+</table>
 
-## Arquitectura
+<br>
+
+## 📐 Arquitectura
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│  Clientes                                                │
-│                                                          │
-│  Flutter (móvil)   Next.js PWA (web)   Tauri (desktop)  │
-│       │                  │                   │           │
-│  SQLite (Drift)    SQLite (WASM)     SQLite (nativo)    │
-│       └──────────────────┴───────────────────┘           │
-│                          │ PowerSync SDK                 │
-└──────────────────────────┼───────────────────────────────┘
-                           │ sync bidireccional, incremental
-┌──────────────────────────┼───────────────────────────────┐
-│  PowerSync Service       │                               │
-│  (replica Postgres → SQLite, filtra por tenant)          │
-└──────────────────────────┼───────────────────────────────┘
-                           │
-┌──────────────────────────┼───────────────────────────────┐
-│  PostgreSQL 16           │                               │
-│  Row-Level Security por tenant_id                        │
-└──────────────────────────┼───────────────────────────────┘
-                           │
-┌──────────────────────────┼───────────────────────────────┐
-│  API Go (chi)            │                               │
-│  Auth JWT · Emisión fiscal · Pagos · Numeración          │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  Clientes                                                     │
+│                                                               │
+│  Flutter (móvil)    Next.js PWA (web)    Tauri 2 (desktop)   │
+│       │                   │                      │            │
+│  SQLite (Drift)     SQLite (WASM)      SQLite (nativo)       │
+│       └───────────────────┴────────────────────┘             │
+│                           │ PowerSync SDK                     │
+└───────────────────────────┼──────────────────────────────────┘
+                            │ sync bidireccional, incremental
+┌───────────────────────────┼──────────────────────────────────┐
+│  PowerSync Service         │                                  │
+│  (replica Postgres → SQLite, filtra por tenant)               │
+└───────────────────────────┼──────────────────────────────────┘
+                            │
+┌───────────────────────────┼──────────────────────────────────┐
+│  PostgreSQL 16             │                                  │
+│  Row-Level Security por tenant_id                             │
+└───────────────────────────┼──────────────────────────────────┘
+                            │
+┌───────────────────────────┼──────────────────────────────────┐
+│  API Go (chi)              │                                  │
+│  Auth JWT · Emisión fiscal · Pagos · Numeración SENIAT        │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ### Reglas offline-first
@@ -72,97 +145,140 @@ Venezuela tiene necesidades ERP específicas que las soluciones internacionales 
 | Tipo de operación | Flujo |
 |---|---|
 | Leer datos (clientes, productos, facturas) | SQLite local. Nunca espera red. |
-| Crear/editar borrador (factura, cliente, producto) | SQLite local → PowerSync sincroniza a Postgres. |
-| Emitir factura (número correlativo SENIAT) | `POST /invoices/emit` → API asigna número → PowerSync propaga. Se encola offline; emite al reconectar. |
+| Crear/editar borrador | SQLite local → PowerSync sincroniza a Postgres. |
+| Emitir factura (número correlativo SENIAT) | `POST /invoices/emit` → API asigna número. Se encola offline; emite al reconectar. |
 | Cobrar con pasarela (Cashea, etc.) | `POST /payments` → API. Se marca `pending_payment` offline. |
 | Stock | Solo movimientos (`stock_movements`, append-only). Nunca se modifica la cantidad absoluta. |
 
----
+<br>
 
-## Stack tecnológico
+## 📱 Aplicaciones
 
-| Capa | Tecnología | Notas |
-|---|---|---|
-| Base de datos | PostgreSQL 16 | `wal_level=logical` para replicación |
-| Sync engine | PowerSync (self-hosted) | Postgres → SQLite por tenant |
-| API | Go 1.25 + chi + pgx/v5 + sqlc | Monolito. Migraciones con goose. |
-| Web | Next.js 16 App Router + TypeScript + Tailwind CSS + shadcn/ui | PWA instalable |
-| State web | TanStack Query + Zustand | |
-| Móvil | Flutter + Riverpod + Drift | Android / iOS |
-| Desktop | Tauri 2 + Rust | Envuelve el web. Plugin Rust para impresoras fiscales. |
-| Auth | JWT propios (access 15 min + refresh 7 días) + bcrypt | Multi-tenant: `tenant_id` en el claim |
-| Tasa BCV | Cron Go → tabla `exchange_rates` | Fallback: admin setea manualmente |
-| Pago SaaS | Stripe | Suscripciones de Chiguire mismo |
-| CI | GitHub Actions | lint + test + build por app |
+| App | Descripción | Puerto | Plataforma |
+|-----|-------------|--------|------------|
+| **API** | Go + chi + pgx/v5 — auth, facturación, fiscal, pagos, compras, SaaS | `3001` | Backend |
+| **Web** | Next.js 16 PWA — 33 rutas, dashboard, facturas, inventario, fiscal, informes | `3000` | Web · PWA instalable |
+| **Mobile** | Flutter + Riverpod — 30+ pantallas, offline-first, escáner de códigos | — | Android · iOS |
+| **Desktop** | Tauri 2 + Rust — impresora fiscal (The Factory HKA, PNP, Bixolon) | — | Windows · macOS · Linux |
 
----
+<br>
 
-## Estructura del proyecto
+## 📦 Estructura del Monorepo
 
 ```
 chiguire/
 ├── apps/
-│   ├── api/                        # Go API
-│   │   ├── cmd/server/             # main + handlers de fase 0
+│   ├── api/                          ← Go API (chi + pgx/v5 + goose)
+│   │   ├── cmd/server/               ← Entry point + router
 │   │   └── internal/
-│   │       ├── auth/               # JWT, register, login, refresh
-│   │       ├── middleware/         # RequireAuth, RequireTenant
-│   │       ├── tenant/             # CRUD de empresas
-│   │       ├── powersync/          # Token endpoint para el sync
-│   │       ├── invoice/            # (Fase 1)
-│   │       ├── inventory/          # (Fase 1)
-│   │       ├── fiscal/             # (Fase 2) IGTF, IVA, retenciones
-│   │       └── payment/            # (Fase 4) Cashea, Spidi, etc.
+│   │       ├── auth/                 ← JWT, register, login, refresh
+│   │       ├── middleware/           ← RequireAuth, RequireTenant, CORS
+│   │       ├── tenant/               ← CRUD de empresas
+│   │       ├── customer/             ← Clientes
+│   │       ├── vendor/               ← Proveedores
+│   │       ├── product/              ← Productos + catálogo
+│   │       ├── inventory/            ← Stock + movimientos
+│   │       ├── invoice/              ← Facturación forma libre
+│   │       ├── fiscal/               ← IGTF, IVA, retenciones, BCV cron
+│   │       ├── fiscaldevice/         ← Dispositivos fiscales + talonarios
+│   │       ├── payment/              ← Cashea, Spidi, WayuPay, Biopago
+│   │       ├── paymentmethod/        ← Métodos de pago configurables
+│   │       ├── purchase/             ← Órdenes de compra
+│   │       ├── quotation/            ← Cotizaciones
+│   │       ├── commission/           ← Comisiones de vendedores
+│   │       ├── seller/               ← Vendedores + límites por producto
+│   │       ├── delivery/             ← Rutas de reparto
+│   │       ├── creditnote/           ← Notas de crédito/débito
+│   │       ├── transfer/             ← Transferencias de inventario
+│   │       ├── manufacturing/        ← Órdenes de manufactura + BOM
+│   │       ├── picking/              ← Listas de picking
+│   │       ├── accountspayable/      ← Cuentas por cobrar/pagar
+│   │       ├── report/               ← Libros ventas/compras, kardex, art177
+│   │       ├── apitoken/             ← API tokens con hash SHA256
+│   │       ├── saas/                 ← Suscripciones SaaS
+│   │       ├── webhook/              ← Webhooks salientes + dispatcher
+│   │       ├── importexport/         ← Import/export Excel
+│   │       └── powersync/            ← Token endpoint para sync
 │   │
-│   ├── web/                        # Next.js PWA
+│   ├── web/                          ← Next.js 16 PWA
 │   │   ├── app/
-│   │   │   ├── (auth)/             # login, register
-│   │   │   └── (app)/              # dashboard, facturas, inventario...
+│   │   │   ├── (auth)/               ← login, register
+│   │   │   └── (app)/                ← 33 rutas: dashboard, facturas,
+│   │   │       clientes, productos, inventario, fiscal, pagos,
+│   │   │       compras, cotizaciones, vendedores, comisiones,
+│   │   │       métodos-pago, dispositivos-fiscales, notas-credito,
+│   │   │       transferencias, manufactura, picking, cuentas,
+│   │   │       informes, api-tokens, onboarding, configuración
+│   │   ├── components/               ← Button, Input, Select, Table, Card, Modal, Sidebar
 │   │   └── lib/
-│   │       ├── api.ts              # Cliente HTTP tipado
-│   │       └── powersync.ts        # Schema SQLite + instancia DB local
+│   │       ├── api.ts                ← Cliente HTTP tipado
+│   │       └── powersync.ts          ← Schema SQLite + instancia DB local
 │   │
-│   ├── mobile/                     # Flutter
+│   ├── mobile/                       ← Flutter + Riverpod
 │   │   └── lib/
-│   │       ├── core/               # database.dart, api.dart
-│   │       └── features/           # (Fase 1+) por feature
+│   │       ├── core/                 ← api.dart, database.dart
+│   │       ├── providers/            ← auth, customer, invoice, product
+│   │       ├── widgets/              ← app_scaffold
+│   │       └── features/             ← 30+ pantallas por feature
+│   │           ├── auth/             ← login, register
+│   │           ├── dashboard/        ← resumen
+│   │           ├── customers/        ← lista + formulario
+│   │           ├── products/         ← lista + formulario
+│   │           ├── inventory/        ← stock + movimientos
+│   │           ├── invoices/         ← lista + formulario + detalle
+│   │           ├── quotations/       ← cotizaciones
+│   │           ├── purchases/        ← órdenes de compra
+│   │           ├── fiscal/           ← libros + BCV
+│   │           ├── payments/         ← links de pago
+│   │           ├── delivery/         ← rutas de reparto
+│   │           ├── sellers/          ← vendedores + comisiones
+│   │           ├── payment_methods/  ← métodos de pago
+│   │           ├── fiscal_devices/   ← dispositivos fiscales
+│   │           ├── credit_notes/     ← notas de crédito
+│   │           ├── transfers/        ← transferencias
+│   │           ├── manufacturing/    ← manufactura + BOM
+│   │           ├── picking/          ← picking lists
+│   │           ├── accounts/         ← CxC/CxP
+│   │           ├── reports/          ← informes
+│   │           ├── api_tokens/       ← API tokens
+│   │           ├── scanner/          ← escáner de códigos
+│   │           └── settings/         ← configuración
 │   │
-│   └── desktop/                    # Tauri 2 (Fase 3)
+│   └── desktop/                      ← Tauri 2 (Fase 3)
 │       └── src-tauri/
-│           └── src/
-│               └── fiscal/         # Plugin Rust para impresoras fiscales
+│           ├── src/fiscal/           ← Plugin Rust: impresoras fiscales
+│           ├── Cargo.toml            ← Dependencias Rust
+│           └── tauri.conf.json       ← Config + CSP
 │
 ├── infra/
 │   ├── docker/
-│   │   └── compose.yml             # Solo PowerSync (Postgres corre local)
-│   ├── migrations/                 # Goose SQL
+│   │   └── compose.yml               ← Solo PowerSync (Postgres corre local)
+│   ├── migrations/                   ← Goose SQL (00001–00009)
 │   └── powersync/
-│       ├── config.yaml             # Conexión a Postgres + JWT secret
-│       └── sync_rules.yaml         # Reglas de sync por tenant
+│       ├── config.yaml               ← Conexión a Postgres + JWT secret
+│       └── sync_rules.yaml           ← 50+ tablas con filtro por tenant
 │
-├── packages/
-│   └── shared-types/               # (futuro) tipos TS generados desde SQL
-│
-├── AGENTS.md                       # Referencia rápida para AI agents
-├── Makefile                        # Comandos del proyecto
-└── README.md                       # Este archivo
+├── AGENTS.md                         ← Referencia rápida para AI agents
+├── Makefile                          ← Comandos del proyecto
+├── pnpm-workspace.yaml               ← Workspace definition
+└── README.md                         ← Este archivo
 ```
 
----
+<br>
 
-## Configuración local
+## 🚀 Quick Start
 
-### Requisitos
+### Prerrequisitos
 
-| Herramienta | Versión mínima |
-|---|---|
-| Go | 1.25+ |
-| Node.js | 20+ |
-| pnpm | 9+ |
-| Flutter | 3.24+ |
-| PostgreSQL | 16 (instalado localmente) |
-| Docker Desktop | Solo para PowerSync |
-| goose | `go install github.com/pressly/goose/v3/cmd/goose@latest` |
+| Herramienta | Versión | Instalación |
+|-------------|---------|-------------|
+| Go | 1.26+ | [go.dev/dl](https://go.dev/dl/) |
+| Node.js | 20+ | [nodejs.org](https://nodejs.org/) |
+| pnpm | 11+ | `npm install -g pnpm` |
+| Flutter | 3.24+ | [flutter.dev](https://flutter.dev/) |
+| PostgreSQL | 16+ | [postgresql.org](https://www.postgresql.org/download/) |
+| Docker | — | [docker.com](https://www.docker.com/) (solo PowerSync) |
+| goose | latest | `go install github.com/pressly/goose/v3/cmd/goose@latest` |
 
 ### 1. Habilitar replicación lógica en Postgres
 
@@ -175,30 +291,23 @@ ALTER SYSTEM SET max_replication_slots = 10;
 ALTER SYSTEM SET max_wal_senders = 10;
 ```
 
-Después reiniciar Postgres (Windows: `Restart-Service postgresql-x64-16` o desde Services.msc).
-
-Verificar:
+Después reiniciar Postgres y verificar:
 
 ```sql
 SHOW wal_level;  -- debe retornar "logical"
 ```
 
-### 2. Crear la base de datos
+### 2. Base de datos
 
 ```bash
 make db-create
-```
-
-O manualmente:
-
-```sql
-CREATE DATABASE chiguire;
 ```
 
 ### 3. Variables de entorno
 
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example  apps/web/.env.local
 ```
 
 Editar `apps/api/.env`:
@@ -215,43 +324,31 @@ PORT=3001
 > openssl rand -hex 32
 > ```
 
-### 4. Ejecutar migraciones
+### 4. Migraciones
 
 ```bash
 make migrate
 ```
 
-### 5. Iniciar el API
+### 5. Iniciar servicios
 
 ```bash
-make api-dev
+# PowerSync (Docker)
+make infra-up
+
+# API Go
+make api-dev          # → http://localhost:3001
+
+# Web Next.js
+make web-dev          # → http://localhost:3000
+
+# Flutter
+cd apps/mobile && flutter run
 ```
 
-El API queda en `http://localhost:3001`.
+<br>
 
-### 6. Iniciar la web
-
-```bash
-make web-dev
-```
-
-La web queda en `http://localhost:3000`.
-
-### 7. PowerSync (opcional en Fase 0)
-
-El sync end-to-end requiere PowerSync corriendo. Solo corre en Docker.
-
-Editar `infra/powersync/config.yaml` con el mismo `POWERSYNC_JWT_SECRET` del `.env`.
-
-```bash
-make powersync-up
-```
-
-PowerSync queda en `http://localhost:8080`.
-
----
-
-## Comandos
+## 📋 Comandos
 
 ```bash
 # Base de datos (Postgres local)
@@ -263,7 +360,7 @@ make db-wal                 # Habilita wal_level=logical (requiere restart)
 make migrate                # Aplica todas las pendientes
 make migrate-down           # Revierte una migración
 make migrate-status         # Ver estado actual
-make migrate-create name=add_customers   # Nueva migración vacía
+make migrate-create name=x  # Nueva migración vacía
 
 # API Go
 make api-dev                # Corre el servidor con go run
@@ -274,6 +371,7 @@ make web-dev                # Dev server en :3000
 make web-build              # Build de producción
 
 # PowerSync (Docker)
+make infra-up               # Alias de powersync-up
 make powersync-up           # Inicia PowerSync service
 make powersync-down         # Detiene PowerSync service
 
@@ -282,152 +380,73 @@ make mobile-analyze         # flutter analyze
 make mobile-test            # flutter test
 ```
 
----
+<br>
 
-## Fases de desarrollo
+## 📊 Fases de Desarrollo
 
-### Fase 0 — Fundación ✅ Completada
+### Fase 0 — Fundación ✅
 
 **Objetivo:** probar que el sync multi-tenant funciona end-to-end antes de construir features.
 
-**Entregables:**
 - Monorepo: pnpm workspaces + Go + Flutter
 - API Go: auth JWT, multi-tenant (tenants, users, user_tenants), PowerSync token endpoint
 - PostgreSQL: Row-Level Security por `tenant_id` en cada tabla
 - PowerSync: sync rules que aíslan datos por tenant (`token_parameters.tenant_id`)
-- Next.js web: login, registro, dashboard con selector de empresa y test de sync
+- Next.js web: login, registro, dashboard con selector de empresa
 - Flutter mobile: skeleton con PowerSync + Riverpod
-- Migración base: `tenants`, `users`, `user_tenants`, `refresh_tokens`, `exchange_rates`, `test_items`
-
-**Test crítico de aislamiento:**
-
-```bash
-# Crear dos usuarios con empresas distintas
-POST /auth/register { email: "user1@test.com", ... }
-POST /auth/register { email: "user2@test.com", ... }
-
-# Cada uno crea su empresa y agrega test_items
-# Verificar que /test-items de user1 NO retorna items de user2
-```
 
 ---
 
-### Fase 1 — Facturación e inventario
+### Fase 1 — Facturación e inventario ✅
 
 **Objetivo:** un negocio puede vender y controlar stock completamente offline.
 
-**Módulos:**
-
-#### Clientes y proveedores
-- CRUD completo (nombre, RIF, dirección, teléfono, email)
-- Búsqueda offline desde SQLite local
-- Historial de compras por cliente
-
-#### Productos y catálogo
-- Categorías, unidades de medida, código de barras/QR
-- Precios en múltiples monedas (USD base, VES calculado)
-- Foto del producto (almacenada localmente, sincronizada en background)
-- Costo promedio ponderado
-
-#### Inventario
-- Múltiples almacenes por sucursal
-- Movimientos append-only (entrada, salida, transferencia, ajuste)
-- Stock por ubicación calculado desde movimientos (vista materializada)
-- Alertas de stock mínimo
-
-#### Facturación — Forma Libre
-- Encabezado: cliente, fecha, vendedor, sucursal
-- Líneas: producto, cantidad, precio, descuento
-- Totales: subtotal, descuento, impuestos, total
-- Estados: `borrador → emitida → pagada → anulada`
-- Numeración: `XX-YYYYMMDD-NNNNN` (correlativo por sucursal, asignado por API)
-- PDF generado en cliente (sin necesidad de servidor)
-- Funciona completamente offline; emite el número al reconectar
-
-#### Pagos básicos
-- Efectivo USD, efectivo VES, transferencia bancaria
-- Pagos parciales y combinados
-- Saldo pendiente por factura
-
-**Nuevas tablas:**
-```sql
-customers, vendors, product_categories, products, product_prices,
-warehouses, stock_movements, stock_by_location (materialized view),
-invoices, invoice_items, invoice_payments
-```
+| Módulo | Features |
+|--------|----------|
+| **Clientes** | CRUD completo, RIF, búsqueda offline, historial de compras, vendedor asignado |
+| **Productos** | Categorías, unidades de medida, código de barras, precios multi-moneda, costo promedio ponderado |
+| **Inventario** | Múltiples almacenes, movimientos append-only, stock por ubicación (vista materializada), alertas de stock mínimo |
+| **Facturación** | Forma libre, líneas con descuento, totales automáticos, estados `borrador → emitida → pagada → anulada`, numeración `XX-YYYYMMDD-NNNNN`, PDF en cliente |
+| **Pagos básicos** | Efectivo USD/VES, transferencia, pagos parciales y combinados |
 
 **Migraciones:** `00002_customers_vendors.sql`, `00003_products_inventory.sql`, `00004_invoices.sql`
 
 ---
 
-### Fase 2 — Fiscal venezolano
+### Fase 2 — Fiscal venezolano ✅
 
-**Objetivo:** cumplimiento completo con SENIAT. Ninguna factura se emite sin cálculos correctos.
+**Objetivo:** cumplimiento completo con SENIAT.
 
-> ⚠️ Esta fase requiere revisión de un contador público venezolano antes de lanzar a producción.
+> ⚠️ Requiere revisión de un contador público venezolano antes de producción.
 
-#### Tasa BCV automática
-- Cron Go cada 6 horas scraping BCV
-- Tabla `exchange_rates` con historial
-- Fallback: admin setea tasa manualmente si el scraper falla
-- Todas las facturas graban la tasa del momento de emisión
+| Feature | Descripción |
+|---------|-------------|
+| **Tasa BCV** | Cron Go cada 6h scraping BCV → tabla `exchange_rates`. Fallback manual. |
+| **IGTF** | 3% sobre pagos en divisas extranjeras. Se calcula al momento del pago. |
+| **IVA** | General 16%, reducido 8%, exento (medicamentos). Categoría fiscal por producto. |
+| **Retenciones IVA** | Agentes de retención: 75% del IVA. Comprobante PDF. |
+| **Retenciones ISLR** | Por tipo de servicio/bien. Comprobante PDF. |
+| **Libros fiscales** | Libro de Ventas y Compras con IVA desglosado. Export PDF/Excel. Períodos mensuales. |
+| **Dispositivos fiscales** | CRUD + secuencias de documentos + talonarios de contingencia |
+| **Notas crédito/débito** | Vinculadas a factura, con items y cálculo de totales |
 
-#### IGTF (Impuesto a las Grandes Transacciones Financieras)
-- 3% sobre pagos en divisas extranjeras (USD, EUR, etc.)
-- Se calcula al momento del pago, no de la factura
-- Retención opcional si el cliente es contribuyente especial
-
-#### IVA
-- Alícuota general: 16%
-- Alícuota reducida: 8% (algunos alimentos y bienes)
-- Exento: medicamentos, ciertos alimentos básicos
-- Cada producto tiene su categoría fiscal
-
-#### Retenciones IVA
-- Agentes de retención retienen el 75% del IVA (o 100% en casos especiales)
-- Comprobante de retención generado en PDF
-- Registro en `tax_withholdings`
-
-#### Retenciones ISLR
-- Aplica a proveedores según actividad económica
-- Porcentaje configurable por tipo de servicio/bien
-- Comprobante de retención
-
-#### Libros fiscales
-- Libro de Ventas: todas las facturas del período con IVA desglosado
-- Libro de Compras: todas las compras con IVA acreditable
-- Exportación a PDF y Excel (formato SENIAT)
-- Períodos mensuales
-
-**Nuevas tablas:**
-```sql
-tax_categories, tax_withholdings, fiscal_periods, fiscal_books
-```
+**Migraciones:** `00005_fiscal.sql`, `00009_sellers_payment_methods.sql`
 
 ---
 
-### Fase 3 — Impresora fiscal (Desktop)
+### Fase 3 — Impresora fiscal (Desktop) ✅
 
-**Objetivo:** la app Tauri 2 puede imprimir en impresoras fiscales homologadas por SENIAT.
-
-#### Tauri 2 desktop
-- Envuelve el mismo build de Next.js (un solo frontend)
-- Bundle ~10MB vs Electron ~120MB
-- Autoactualización via Tauri updater
-
-#### Plugin de impresoras fiscales
-Plugin Rust (`src-tauri/src/fiscal/`) que abstrae el protocolo de cada marca:
+**Objetivo:** la app Tauri 2 imprime en impresoras fiscales homologadas por SENIAT.
 
 | Marca | Protocolo | Status |
-|---|---|---|
-| The Factory HKA | Serial RS-232 / USB | Fase 3 (prioridad — más común en VE) |
-| PNP | Serial / TCP | Fase 3 |
-| Bixolon | USB | Fase 4 |
-| Otras | TBD | Bajo demanda |
+|-------|-----------|--------|
+| **The Factory HKA** | Serial RS-232 / USB | ✅ Implementado |
+| **PNP** | Serial / TCP | ✅ Implementado |
+| **Bixolon** | USB | ✅ Implementado |
 
-**Flujo de emisión:**
-1. Factura llega a estado `approved` en la app
-2. Desktop envía al plugin: líneas, totales, cliente, forma de pago
+**Flujo:**
+1. Factura llega a estado `approved`
+2. Desktop envía al plugin Rust: líneas, totales, cliente, forma de pago
 3. Plugin serializa en protocolo de la marca y escribe al puerto
 4. Impresora retorna número Z y número de control
 5. API registra el número de control SENIAT en la factura
@@ -435,115 +454,72 @@ Plugin Rust (`src-tauri/src/fiscal/`) que abstrae el protocolo de cada marca:
 **Modos de facturación SENIAT:**
 - **Forma Libre**: PDF generado por la app (Fases 0–2)
 - **Máquina Fiscal**: impresora conectada al desktop (Fase 3)
-- **Imprenta Digital**: XML firmado + envío a proveedor SENIAT-autorizado (Fase 4+)
+- **Imprenta Digital**: XML firmado + envío a proveedor SENIAT-autorizado (futuro)
 
 ---
 
-### Fase 4 — Pagos
+### Fase 4 — Pagos ✅
 
-**Objetivo:** el cajero puede cobrar con cualquier método de pago digital venezolano desde la app.
-
-#### Pasarelas integradas
+**Objetivo:** el cajero cobra con cualquier método de pago digital venezolano desde la app.
 
 | Pasarela | Método | Notas |
-|---|---|---|
+|----------|--------|-------|
 | **Cashea** | Crédito digital en cuotas | Webhook confirma pago |
 | **Spidi** | Pago móvil / transferencia | |
 | **WayuPay** | Multi-método VE | |
 | **Biopago** | Biométrico / punto de venta | Requiere terminal física |
 
-**Arquitectura de pagos:**
+**Arquitectura:**
 
 ```go
-// Cada pasarela implementa esta interfaz
 type PaymentProvider interface {
     CreatePaymentLink(invoice Invoice, amount Money) (PaymentLink, error)
     HandleWebhook(payload []byte, signature string) (PaymentEvent, error)
 }
 ```
 
-Un solo archivo por pasarela (`internal/payment/cashea.go`, etc.). El router de webhooks enruta por `provider` en la URL: `POST /webhooks/payments/{provider}`.
-
-**Flujo offline:**
-- Si no hay red al cobrar: se registra el intento localmente
-- Al reconectar: se genera el link y se envía por WhatsApp/SMS al cliente
-- Si el cliente pagó offline (efectivo): se registra directamente sin pasarela
-
-#### Links de pago
-- Se genera un link corto (`chiguire.app/pay/{code}`) por factura
-- El cliente abre en su teléfono, escoge método, paga
-- Webhook actualiza el estado de la factura en tiempo real
+**Migración:** `00006_payments.sql`
 
 ---
 
-### Fase 5 — Compras, cotizaciones y operaciones
+### Fase 5 — Compras, cotizaciones y operaciones ✅
 
 **Objetivo:** el ciclo completo de compra-venta y operaciones de campo.
 
-#### Órdenes de compra
-- Selección de proveedor, productos, cantidades
-- Aprobación en flujo (borrador → aprobada → recibida)
-- Recepción parcial de mercancía
-- Actualización automática de stock al recibir
+| Módulo | Features |
+|--------|----------|
+| **Órdenes de compra** | Proveedor, productos, cantidades, aprobación `borrador → aprobada → recibida`, recepción parcial, stock automático |
+| **Cotizaciones** | Igual que factura en estado `quotation`, convertible a factura, validez configurable, PDF por WhatsApp |
+| **Comisiones** | Porcentaje por vendedor y/o categoría, cálculo sobre ventas cobradas, marcar como pagado, referencia de pago |
+| **Rutas de reparto** | Lista de clientes por dirección, estado de entrega, firma digital, offline-first |
+| **Transferencias** | Entre almacenes con ship/receive + `stock_movements` automáticos |
+| **Manufactura** | Órdenes con BOM, start/complete con movimientos de stock automáticos |
+| **Picking** | Listas de consolidación con verificación de items por cantidad |
+| **Cuentas CxC/CxP** | Cuentas por cobrar/pagar con pagos parciales y recordatorios SMS/email |
 
-#### Cotizaciones
-- Igual que una factura pero en estado `quotation`
-- Convertible a factura con un clic
-- Validez configurable (días)
-- PDF enviable por WhatsApp
-
-#### Comisiones de vendedores
-- Porcentaje configurable por vendedor y/o por categoría de producto
-- Cálculo sobre ventas cobradas (no solo facturadas)
-- Reporte de comisiones por período
-
-#### Rutas de reparto
-- Lista de clientes ordenada por dirección (ruta del día)
-- Estado de entrega por factura (pendiente, entregada, rechazada)
-- Firma digital del cliente al recibir
-- Funciona completamente offline; sincroniza al volver a la oficina
-
-**Nuevas tablas:**
-```sql
-purchase_orders, purchase_order_items, purchase_order_receipts,
-quotations, sales_commissions, delivery_routes, delivery_stops
-```
+**Migraciones:** `00007_purchases_quotations.sql`, `00009_sellers_payment_methods.sql`
 
 ---
 
-### Fase 6 — Integraciones y SaaS
+### Fase 6 — Integraciones y SaaS ✅
 
 **Objetivo:** producto SaaS con signup público, facturación propia y automatizaciones.
 
-#### Import/Export Excel
-- Importar clientes, productos desde Excel (SheetJS / Apache POI)
-- Exportar cualquier reporte a Excel
-- Plantillas descargables para importación masiva
+| Feature | Descripción |
+|---------|-------------|
+| **Import/Export Excel** | Clientes, productos desde Excel. Export de reportes. Plantillas descargables. |
+| **Webhooks salientes** | URL configurable. Eventos: `invoice.created`, `invoice.paid`, `stock.low`. Cola con backoff exponencial. |
+| **Suscripciones SaaS** | Trial 7 días → Emprendedor → PyME → Gold → Enterprise. Límites por plan. Cobro via Stripe. |
+| **API Tokens** | Generación con hash SHA256, revocación, `last_used_at` |
+| **Informes** | Libro ventas/compras, inventario actual/valorizado, kardex, art177, IGTF |
+| **Onboarding** | Wizard de 5 pasos: empresa → sucursal → impuestos → producto → dispositivo fiscal |
+| **Escáner** | Búsqueda de producto por barcode (mobile) |
 
-#### Webhooks salientes
-- El cliente configura una URL
-- Chiguire envía eventos: `invoice.created`, `invoice.paid`, `stock.low`, etc.
-- Cola de reintentos con backoff exponencial
+**Migración:** `00008_saas_webhooks.sql`, `00009_sellers_payment_methods.sql`
 
-#### N8N templates
-- Templates pre-configurados para automatizaciones comunes:
-  - Factura pagada → enviar comprobante por email
-  - Stock bajo → notificar al encargado por WhatsApp
-  - Nuevo cliente → agregar a CRM
+<br>
 
-#### Suscripciones SaaS (Chiguire como producto)
-- Planes: Trial (7 días) → Emprendedor → PyME → Gold → Enterprise
-- Límites por plan: facturas/mes, sucursales, usuarios
-- Cobro via Stripe (tarjeta internacional)
-- Al vencer el plan: modo solo lectura (no bloqueo total)
-
-#### Onboarding
-- Wizard de 5 pasos: empresa → moneda → sucursales → primer producto → primera factura
-- Datos de ejemplo precargados opcionales
-
----
-
-## Modelo de datos
+## 🗄️ Modelo de Datos
 
 ### Tablas núcleo (multi-tenant)
 
@@ -554,9 +530,9 @@ users (id, email, password_hash, full_name)
 user_tenants (user_id, tenant_id, role)
 
 -- Catálogo
-customers (tenant_id, rif, name, address, phone, email)
+customers (tenant_id, rif, name, address, phone, email, default_seller_id)
 vendors (tenant_id, rif, name, ...)
-products (tenant_id, sku, name, category_id, tax_category)
+products (tenant_id, sku, name, category_id, tax_category, barcode)
 product_prices (product_id, currency, amount, valid_from)
 
 -- Inventario (append-only, nunca UPDATE de cantidad)
@@ -564,14 +540,27 @@ warehouses (tenant_id, branch_id, name)
 stock_movements (tenant_id, warehouse_id, product_id, type, qty, reference_id)
 
 -- Facturación
-invoices (tenant_id, number, customer_id, status, currency, subtotal, tax, total, issued_at)
+invoices (tenant_id, number, customer_id, seller_id, status, currency, subtotal, tax, total, issued_at)
 invoice_items (invoice_id, product_id, qty, unit_price, discount, tax_amount)
 invoice_payments (invoice_id, method, provider, amount_usd, amount_ves, rate_at_payment)
 
 -- Fiscal
+tax_categories (tenant_id, name, rate, type)
 tax_withholdings (tenant_id, invoice_id, type, base, rate, amount)
 fiscal_books (tenant_id, type, period, entries_json)
 exchange_rates (currency, rate_to_ves, source, effective_at)  -- sin tenant_id (compartida)
+
+-- Cachicamo parity (Fase 5-6)
+sellers (tenant_id, user_id, name, commission_pct, is_active)
+payment_methods (tenant_id, name, type, currency, ...)
+fiscal_devices (tenant_id, serial, brand, model, status)
+credit_notes (tenant_id, invoice_id, type, number, total)
+inventory_transfers (tenant_id, from_warehouse, to_warehouse, status)
+manufacturing_orders (tenant_id, product_id, qty, status)
+picking_lists (tenant_id, status, assigned_to)
+accounts_receivable (tenant_id, customer_id, amount, due_date)
+accounts_payable (tenant_id, vendor_id, amount, due_date)
+api_tokens (tenant_id, name, token_hash, last_used_at)
 ```
 
 ### Convención RLS
@@ -580,8 +569,10 @@ Todas las tablas de negocio tienen:
 
 ```sql
 tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE
--- + índice: CREATE INDEX ON tabla(tenant_id);
--- + policy: USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
+CREATE INDEX ON tabla(tenant_id);
+ALTER TABLE tabla ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON tabla
+    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
 ```
 
 El API setea el contexto al inicio de cada request:
@@ -590,9 +581,9 @@ El API setea el contexto al inicio de cada request:
 conn.Exec(ctx, "SET LOCAL app.tenant_id = $1", tenantID)
 ```
 
----
+<br>
 
-## Multi-tenancy
+## 🔐 Multi-tenancy
 
 Un usuario puede pertenecer a varias empresas (ej: contador que maneja múltiples clientes). El JWT de acceso lleva el `tenant_id` de la empresa activa:
 
@@ -605,79 +596,80 @@ Un usuario puede pertenecer a varias empresas (ej: contador que maneja múltiple
 }
 ```
 
-**Para cambiar de empresa:** el usuario hace login nuevamente pasando el nuevo `tenant_id`. El frontend guarda el token en sessionStorage (dev) / httpOnly cookie (prod).
+**Aislamiento garantizado en 3 capas:**
 
-**Token PowerSync:** el endpoint `GET /powersync/token` emite un token de 30 min con `parameters.tenant_id` como claim. PowerSync usa ese valor para filtrar qué filas replica a ese cliente.
+1. **PostgreSQL RLS** — policy `USING (tenant_id = current_setting('app.tenant_id', true)::uuid)`
+2. **PowerSync sync rules** — `WHERE tenant_id = bucket.tenant_id` (filtro por JWT)
+3. **API middleware** — `RequireTenant` setea `app.tenant_id` en cada request
+
+<br>
+
+## 🔧 Variables de Entorno
+
+### API Go
+
+| Variable | Requerida | Default | Descripción |
+|----------|-----------|---------|-------------|
+| `DATABASE_URL` | ✅ | — | Connection string PostgreSQL |
+| `JWT_SECRET` | ✅ | — | Secret para firmar JWT (HS256) |
+| `POWERSYNC_JWT_SECRET` | ✅ | — | Secret para tokens de PowerSync |
+| `PORT` | ❌ | `3001` | Puerto del servidor |
+
+### Web (Next.js)
+
+| Variable | Requerida | Default | Descripción |
+|----------|-----------|---------|-------------|
+| `NEXT_PUBLIC_API_URL` | ✅ | `http://localhost:3001` | URL base del backend Go |
+| `NEXT_PUBLIC_POWERSYNC_URL` | ✅ | `http://localhost:8080` | URL de PowerSync |
+
+### Mobile (Flutter)
+
+| Variable | Requerida | Default | Descripción |
+|----------|-----------|---------|-------------|
+| `API_URL` | ✅ | `http://10.0.2.2:3001` | URL del backend (Android emulator) |
+| `POWERSYNC_URL` | ✅ | `http://10.0.2.2:8080` | URL de PowerSync |
+
+> Pasar via `--dart-define` en build flags.
+
+<br>
+
+## 🧪 Testing
+
+```bash
+# API Go
+cd apps/api && go test ./...
+
+# Flutter
+cd apps/mobile && flutter test
+
+# Web
+cd apps/web && pnpm build
+```
+
+| Test | Cobertura |
+|------|-----------|
+| `invoice/handler_test.go` | Formato de número de factura |
+| `payment/provider_test.go` | Providers de pago |
+| `flutter test` | Widget test — login render |
+
+<br>
+
+## 📜 Licencia
+
+**© 2026 Gustavo Colina (@Suggus1899). Todos los derechos reservados.**
+
+Este software y su código fuente son **propiedad exclusiva** de Gustavo Colina (@Suggus1899).
+
+- **No** está permitido copiar, modificar, distribuir, sublicenciar ni usar este código, total o parcialmente, sin autorización expresa y por escrito del autor.
+- **No** está permitido usar este código con fines comerciales ni privados sin una licencia válida.
+- Cualquier uso no autorizado constituye una violación de los derechos de autor y será perseguido conforme a la ley.
+
+**Este es un software propietario. No es código abierto (open source) ni software libre.**
 
 ---
 
-## Sync offline-first
+<div align="center">
 
-### ¿Cómo funciona PowerSync?
+<sub>Hecho con 🦔 para el sector empresarial de Venezuela</sub>
 
-1. PowerSync lee el WAL (Write-Ahead Log) de Postgres via replicación lógica.
-2. Aplica las `sync_rules.yaml` para decidir qué filas van a qué bucket.
-3. Cada cliente se suscribe a su bucket (filtrado por `tenant_id`).
-4. Los cambios llegan al cliente como operaciones SQLite incrementales.
-5. El cliente escribe en su SQLite local y la UI reacciona reactivamente.
-
-### Escrituras desde el cliente
-
-Las escrituras del cliente van primero a SQLite local (instantáneo). PowerSync las propaga a Postgres via la API:
-
-- Chiguire usa el modo **"managed uploads"**: el SDK envía un `PUT /powersync/upload` con las operaciones pendientes.
-- El API valida, aplica RLS, escribe en Postgres.
-- PowerSync propaga el cambio a todos los demás clientes del mismo tenant.
-
-### Conflictos
-
-| Caso | Resolución |
-|---|---|
-| Dos usuarios editan el mismo cliente | Last-Write-Wins (PowerSync por defecto) |
-| Stock modificado simultáneamente | No hay conflicto: solo se hacen inserts en `stock_movements` |
-| Número de factura asignado | Lo asigna exclusivamente el API (nunca el cliente) |
-| Pago procesado offline | Se encola; se envía al reconectar |
-
----
-
-## Convenciones
-
-### Commits (Conventional Commits)
-
-```
-feat: agregar módulo de cotizaciones
-fix: corregir cálculo de IGTF en pagos combinados
-chore: actualizar dependencias Go
-docs: documentar endpoints de fiscal
-refactor: extraer lógica de PDF a helper
-test: agregar tests de retención ISLR
-```
-
-### Branches
-
-```
-main          → producción
-dev           → integración
-feat/xxx      → features nuevas
-fix/xxx       → bugfixes
-```
-
-### APIs Go
-
-- Handlers en `internal/{feature}/handler.go`
-- Lógica de negocio en `internal/{feature}/service.go`
-- Queries SQL en `internal/db/queries/{feature}.sql` (sqlc genera el Go)
-- Una interfaz por pasarela de pago; un archivo por implementación
-
-### Nuevo módulo checklist
-
-Al agregar una nueva tabla:
-
-- [ ] Migración goose en `infra/migrations/`
-- [ ] `tenant_id` en la tabla + índice
-- [ ] Policy RLS `USING (tenant_id = ...)`
-- [ ] Agregar tabla a `sync_rules.yaml` si debe sincronizar al cliente
-- [ ] Agregar tabla al schema SQLite en `apps/web/lib/powersync.ts` y `apps/mobile/lib/core/database.dart`
-- [ ] Queries sqlc en `internal/db/queries/`
-- [ ] Handler + service en `internal/{feature}/`
-- [ ] Rutas registradas en `cmd/server/main.go`
+</div>
