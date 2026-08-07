@@ -1,145 +1,65 @@
 'use client';
-import { useState, useEffect, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { api, type Invoice, type Product } from '@/lib/api';
+import { Card } from '@/components/Card';
 
-type Tenant = { id: string; name: string; slug: string; plan: string };
-type TestItem = { id: string; label: string; created_at: string };
-
-export default function Dashboard() {
-  const router = useRouter();
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [selected, setSelected] = useState<Tenant | null>(null);
-  const [items, setItems] = useState<TestItem[]>([]);
-  const [newTenantName, setNewTenantName] = useState('');
-  const [newItemLabel, setNewItemLabel] = useState('');
+export default function DashboardPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.tenants.list()
-      .then(setTenants)
-      .catch(() => router.push('/login'))
-      .finally(() => setLoading(false));
-  }, [router]);
+    Promise.all([
+      api.invoices.list().catch(() => [] as Invoice[]),
+      api.products.list().catch(() => [] as Product[]),
+    ]).then(([inv, prod]) => {
+      setInvoices(inv);
+      setProducts(prod);
+      setLoading(false);
+    });
+  }, []);
 
-  useEffect(() => {
-    if (!selected) return;
-    api.testItems.list().then(setItems).catch(console.error);
-  }, [selected]);
+  if (loading) return <div className="text-gray-500">Cargando...</div>;
 
-  async function createTenant(e: FormEvent) {
-    e.preventDefault();
-    if (!newTenantName) return;
-    const slug = newTenantName.toLowerCase().replace(/\s+/g, '-');
-    const t = await api.tenants.create(newTenantName, slug);
-    setTenants((prev) => [...prev, { ...t, plan: 'trial' }]);
-    setNewTenantName('');
-  }
-
-  async function addItem(e: FormEvent) {
-    e.preventDefault();
-    if (!newItemLabel || !selected) return;
-    const item = await api.testItems.create(newItemLabel);
-    setItems((prev) => [item, ...prev]);
-    setNewItemLabel('');
-  }
-
-  function logout() {
-    api.auth.logout();
-    router.push('/login');
-  }
-
-  if (loading) return <div className="p-8 text-gray-500">Cargando...</div>;
+  const recentInvoices = invoices.slice(0, 5);
+  const totalInvoiced = invoices.reduce((s, i) => s + (i.total || 0), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-        <h1 className="text-lg font-semibold text-gray-900">Chiguire</h1>
-        <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-900">
-          Salir
-        </button>
-      </header>
+    <div className="space-y-6">
+      <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
 
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
-        {/* Tenant selector */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="font-medium text-gray-900 mb-4">Empresas</h2>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {tenants.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setSelected(t)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                  selected?.id === t.id
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                }`}
-              >
-                {t.name}
-              </button>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card title="Facturas">
+          <p className="text-3xl font-bold text-gray-900">{invoices.length}</p>
+          <p className="text-sm text-gray-500 mt-1">Total facturado: {totalInvoiced.toFixed(2)}</p>
+        </Card>
+        <Card title="Productos">
+          <p className="text-3xl font-bold text-gray-900">{products.length}</p>
+          <p className="text-sm text-gray-500 mt-1">Productos registrados</p>
+        </Card>
+        <Card title="Alertas de stock">
+          <p className="text-3xl font-bold text-gray-900">0</p>
+          <p className="text-sm text-gray-500 mt-1">Productos con stock bajo</p>
+        </Card>
+      </div>
+
+      <Card title="Facturas recientes" actions={<Link href="/facturas" className="text-sm text-blue-600 hover:underline">Ver todas</Link>}>
+        {recentInvoices.length === 0 ? (
+          <p className="text-sm text-gray-400">Sin facturas todavía.</p>
+        ) : (
+          <ul className="space-y-2">
+            {recentInvoices.map((inv) => (
+              <li key={inv.id} className="flex justify-between text-sm py-2 border-b border-gray-100">
+                <Link href={`/facturas/${inv.id}`} className="text-blue-600 hover:underline">
+                  {inv.number || inv.id.slice(0, 8)}
+                </Link>
+                <span className="text-gray-500">{inv.status} — {inv.total?.toFixed(2)} {inv.currency}</span>
+              </li>
             ))}
-          </div>
-          <form onSubmit={createTenant} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Nueva empresa..."
-              value={newTenantName}
-              onChange={(e) => setNewTenantName(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-            >
-              Crear
-            </button>
-          </form>
-        </section>
-
-        {/* Phase 0 sync test */}
-        {selected && (
-          <section className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="font-medium text-gray-900 mb-1">
-              Test de sync — <span className="text-blue-600">{selected.name}</span>
-            </h2>
-            <p className="text-xs text-gray-400 mb-4">
-              Estos items se sincronizan via PowerSync. Solo son visibles para este tenant.
-            </p>
-
-            <form onSubmit={addItem} className="flex gap-2 mb-4">
-              <input
-                type="text"
-                placeholder="Etiqueta del item..."
-                value={newItemLabel}
-                onChange={(e) => setNewItemLabel(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
-              >
-                Agregar
-              </button>
-            </form>
-
-            {items.length === 0 ? (
-              <p className="text-sm text-gray-400">Sin items todavía.</p>
-            ) : (
-              <ul className="space-y-2">
-                {items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex justify-between text-sm py-2 border-b border-gray-100"
-                  >
-                    <span className="text-gray-800">{item.label}</span>
-                    <span className="text-gray-400">{new Date(item.created_at).toLocaleString('es-VE')}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          </ul>
         )}
-      </main>
+      </Card>
     </div>
   );
 }

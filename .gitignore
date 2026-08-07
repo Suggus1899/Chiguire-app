@@ -33,3 +33,6 @@ Thumbs.db
 
 # Docker
 infra/docker/postgres-data/
+
+# Devin workflow markers
+.devin/
