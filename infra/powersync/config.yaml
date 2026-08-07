@@ -1,0 +1,23 @@
+# PowerSync service config (local dev)
+# Docs: https://docs.powersync.com/self-hosting/configuration
+
+replication:
+  connections:
+    - type: postgresql
+      uri: postgresql://chiguire:chiguire_dev@postgres:5432/chiguire
+      # Replica identity must be FULL for tables without PK or with updates
+      debug_api: true
+
+api:
+  # JWT secret must match the one in the API (POWERSYNC_JWT_SECRET env var)
+  tokens:
+    - !env POWERSYNC_JWT_SECRET
+
+sync_rules:
+  path: /config/sync_rules.yaml
+
+storage:
+  type: mongodb
+  # For local dev: embedded MongoDB (no external dep)
+  # For prod: set type: mongodb and provide uri
+  uri: ""

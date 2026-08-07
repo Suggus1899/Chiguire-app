@@ -1,0 +1,35 @@
+# Node
+node_modules/
+.next/
+dist/
+build/
+.pnpm-store/
+
+# Go
+apps/api/bin/
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+
+# Desktop (Tauri)
+apps/desktop/src-tauri/target/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+infra/docker/postgres-data/

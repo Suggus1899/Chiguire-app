@@ -1,0 +1,34 @@
+# PowerSync sync rules — multi-tenant isolation
+# Each bucket is filtered by tenant_id from the JWT token claim
+# Docs: https://docs.powersync.com/usage/sync-rules
+
+bucket_definitions:
+  # Core tenant data: each user only sees their own tenant's rows
+  tenant_data:
+    # 'token_parameters.tenant_id' comes from the JWT claim we set
+    parameters: "SELECT token_parameters.tenant_id as tenant_id"
+    data:
+      - table: customers
+        where: "tenant_id = bucket.tenant_id"
+      - table: vendors
+        where: "tenant_id = bucket.tenant_id"
+      - table: products
+        where: "tenant_id = bucket.tenant_id"
+      - table: branches
+        where: "tenant_id = bucket.tenant_id"
+      - table: invoices
+        where: "tenant_id = bucket.tenant_id"
+      - table: invoice_items
+        where: "tenant_id = bucket.tenant_id"
+      - table: invoice_payments
+        where: "tenant_id = bucket.tenant_id"
+      - table: stock_movements
+        where: "tenant_id = bucket.tenant_id"
+      # Proof-of-concept table (Phase 0 test)
+      - table: test_items
+        where: "tenant_id = bucket.tenant_id"
+
+  # Shared/reference data: all tenants get this (no filter)
+  shared_data:
+    data:
+      - table: exchange_rates
