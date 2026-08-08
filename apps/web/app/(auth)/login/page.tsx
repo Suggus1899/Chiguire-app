@@ -2,7 +2,17 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { WifiOff, Landmark, CreditCard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
+
+const bullets = [
+  { icon: WifiOff,    text: 'Datos en SQLite local · sincroniza al reconectar' },
+  { icon: Landmark,   text: 'IVA, IGTF, ISLR y tasa BCV automática' },
+  { icon: CreditCard, text: 'Cashea, Spidi, WayuPay y Biopago integrados' },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,93 +37,89 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* ── Panel izquierdo (branding) ── */}
-      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col justify-between p-12">
-        <Link href="/" className="text-white font-bold text-xl tracking-tight">🦔 Chiguire</Link>
-
-        <div>
-          <h2 className="text-3xl font-bold text-white leading-snug mb-4">
+      {/* panel izquierdo */}
+      <div className="hidden lg:flex lg:w-[52%] bg-slate-950 flex-col justify-between p-12 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-blue-600/15 blur-[80px]" />
+        <div className="relative">
+          <Link href="/" className="text-white font-bold text-lg tracking-tight flex items-center gap-2">
+            🦔 Chiguire
+          </Link>
+        </div>
+        <div className="relative">
+          <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-3">ERP offline-first</p>
+          <h2 className="text-3xl font-bold text-white leading-snug mb-3">
             Tu ERP funciona<br />
             <span className="text-blue-400">aunque se vaya la luz</span>
           </h2>
-          <p className="text-slate-400 text-sm leading-relaxed mb-10">
-            Offline-first desde el día uno. Tus facturas, inventario y fiscal siempre disponibles — con o sin internet.
+          <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-sm">
+            Offline-first desde el día uno. Tus facturas, inventario y fiscal — siempre disponibles.
           </p>
           <ul className="space-y-4">
-            {[
-              { icon: '📡', text: 'Datos en SQLite local · sincroniza al reconectar' },
-              { icon: '🏛️', text: 'IVA, IGTF, ISLR y tasa BCV automática' },
-              { icon: '💳', text: 'Cashea, Spidi, WayuPay y Biopago integrados' },
-            ].map((f) => (
-              <li key={f.text} className="flex items-start gap-3 text-sm text-slate-300">
-                <span className="text-lg leading-none mt-0.5">{f.icon}</span>
-                {f.text}
+            {bullets.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                  <Icon className="size-4 text-blue-400" />
+                </div>
+                <span className="text-sm text-slate-300">{text}</span>
               </li>
             ))}
           </ul>
         </div>
-
-        <p className="text-slate-600 text-xs">© 2026 Chiguire ERP · Hecho para Venezuela</p>
+        <p className="relative text-slate-700 text-xs">© 2026 Chiguire ERP · Hecho para Venezuela</p>
       </div>
 
-      {/* ── Panel derecho (form) ── */}
-      <div className="flex-1 flex items-center justify-center bg-gray-50 px-6 py-12">
+      {/* panel derecho */}
+      <div className="flex-1 flex items-center justify-center bg-muted/20 px-6 py-12">
         <div className="w-full max-w-sm">
-          {/* mobile logo */}
-          <Link href="/" className="lg:hidden block text-slate-900 font-bold text-xl mb-8">🦔 Chiguire</Link>
+          <Link href="/" className="lg:hidden block font-bold text-xl mb-8">🦔 Chiguire</Link>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Bienvenido de vuelta</h1>
-          <p className="text-sm text-gray-500 mb-8">Ingresa a tu cuenta para continuar</p>
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Bienvenido de vuelta</h1>
+            <p className="text-sm text-muted-foreground">Ingresa a tu cuenta para continuar</p>
+          </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
+            <div className="mb-5 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
               {error}
             </div>
           )}
 
           <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 type="email"
                 required
                 autoComplete="email"
+                placeholder="tu@empresa.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@empresa.com"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-300 transition-shadow"
+                className="h-10"
               />
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-gray-700">Contraseña</label>
-              </div>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
                 type="password"
                 required
                 autoComplete="current-password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-300 transition-shadow"
+                className="h-10"
               />
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-slate-900 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors mt-2"
-            >
+            <Button type="submit" disabled={loading} className="w-full h-10 bg-blue-600 hover:bg-blue-500 text-white border-0 mt-2">
               {loading ? 'Ingresando...' : 'Ingresar'}
-            </button>
+            </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-muted-foreground mt-6">
             ¿No tienes cuenta?{' '}
-            <Link href="/register" className="text-blue-600 font-medium hover:underline">
-              Prueba 7 días gratis
-            </Link>
+            <Link href="/register" className="text-blue-500 font-medium hover:underline">Prueba 7 días gratis</Link>
           </p>
         </div>
       </div>
