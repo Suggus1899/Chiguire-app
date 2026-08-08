@@ -1,23 +1,18 @@
 package payment
 
+import "errors"
+
 // SpidiProvider implements PaymentProvider for Spidi.
-// TODO: integrate real Spidi API in production.
+// ponytail: stub returns error until API credentials are available; real impl
+// needs SPIDI_API_KEY and HTTP POST to api.spidi.app/v1/payment-links
 type SpidiProvider struct{}
 
 func (p *SpidiProvider) CreatePaymentLink(invoiceID string, amountUSD float64) (*PaymentLink, error) {
-	return &PaymentLink{
-		ProviderRef: "spidi-stub-" + invoiceID,
-		AmountUSD:   amountUSD,
-		Status:      "pending",
-	}, nil
+	return nil, errors.New("spidi: not configured — set SPIDI_API_KEY to enable")
 }
 
 func (p *SpidiProvider) HandleWebhook(payload []byte, signature string) (*PaymentEvent, error) {
-	return &PaymentEvent{
-		ProviderRef: "spidi-stub",
-		Status:      "paid",
-		AmountUSD:   0,
-	}, nil
+	return nil, errors.New("spidi: not configured")
 }
 
 func init() {

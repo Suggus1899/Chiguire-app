@@ -74,7 +74,7 @@ class _TransferFormPageState extends State<TransferFormPage> {
           child: ListView(
             children: [
               DropdownButtonFormField<String>(
-                value: _fromWarehouse,
+                initialValue: _fromWarehouse,
                 decoration: const InputDecoration(labelText: 'Almacén origen *', border: OutlineInputBorder()),
                 items: _warehouses.map((w) => DropdownMenuItem(
                       value: w['id']?.toString(),
@@ -84,7 +84,7 @@ class _TransferFormPageState extends State<TransferFormPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _toWarehouse,
+                initialValue: _toWarehouse,
                 decoration: const InputDecoration(labelText: 'Almacén destino *', border: OutlineInputBorder()),
                 items: _warehouses.map((w) => DropdownMenuItem(
                       value: w['id']?.toString(),

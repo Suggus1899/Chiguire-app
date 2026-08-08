@@ -1,23 +1,18 @@
 package payment
 
+import "errors"
+
 // CasheaProvider implements PaymentProvider for Cashea.
-// TODO: integrate real Cashea API in production.
+// ponytail: stub returns error until API credentials are available; real impl
+// needs CASHEA_API_KEY env var and HTTP POST to cashea.com.ve/api/v1/links
 type CasheaProvider struct{}
 
 func (p *CasheaProvider) CreatePaymentLink(invoiceID string, amountUSD float64) (*PaymentLink, error) {
-	return &PaymentLink{
-		ProviderRef: "cashea-stub-" + invoiceID,
-		AmountUSD:   amountUSD,
-		Status:      "pending",
-	}, nil
+	return nil, errors.New("cashea: not configured — set CASHEA_API_KEY to enable")
 }
 
 func (p *CasheaProvider) HandleWebhook(payload []byte, signature string) (*PaymentEvent, error) {
-	return &PaymentEvent{
-		ProviderRef: "cashea-stub",
-		Status:      "paid",
-		AmountUSD:   0,
-	}, nil
+	return nil, errors.New("cashea: not configured")
 }
 
 func init() {

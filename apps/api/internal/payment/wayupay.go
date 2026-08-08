@@ -1,23 +1,18 @@
 package payment
 
+import "errors"
+
 // WayuPayProvider implements PaymentProvider for WayuPay.
-// TODO: integrate real WayuPay API in production.
+// ponytail: stub returns error until API credentials are available; real impl
+// needs WAYUPAY_API_KEY and HTTP POST to api.wayupay.app/charges
 type WayuPayProvider struct{}
 
 func (p *WayuPayProvider) CreatePaymentLink(invoiceID string, amountUSD float64) (*PaymentLink, error) {
-	return &PaymentLink{
-		ProviderRef: "wayupay-stub-" + invoiceID,
-		AmountUSD:   amountUSD,
-		Status:      "pending",
-	}, nil
+	return nil, errors.New("wayupay: not configured — set WAYUPAY_API_KEY to enable")
 }
 
 func (p *WayuPayProvider) HandleWebhook(payload []byte, signature string) (*PaymentEvent, error) {
-	return &PaymentEvent{
-		ProviderRef: "wayupay-stub",
-		Status:      "paid",
-		AmountUSD:   0,
-	}, nil
+	return nil, errors.New("wayupay: not configured")
 }
 
 func init() {

@@ -164,7 +164,7 @@ class _CommissionsPageState extends State<CommissionsPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _statusFilter,
+                              initialValue: _statusFilter,
                               decoration: const InputDecoration(labelText: 'Estado', border: OutlineInputBorder(), isDense: true),
                               items: const [
                                 DropdownMenuItem(value: 'all', child: Text('Todos')),
