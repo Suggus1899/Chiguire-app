@@ -36,3 +36,11 @@ infra/docker/postgres-data/
 
 # Devin workflow markers
 .devin/
+# Local environment files
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.*.sample
+!.env.template
+!.env.*.template
